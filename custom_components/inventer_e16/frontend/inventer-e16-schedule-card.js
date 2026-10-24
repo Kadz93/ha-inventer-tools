@@ -3,6 +3,7 @@
  * 
  * Allows viewing, adding, editing, and deleting time program entries
  * for all e16 ventilation profiles (living_room, bedroom, custom_1..custom_9, etc.)
+ * as well as assigning profiles to zones.
  */
 
 const PROFILES = [
@@ -72,6 +73,11 @@ class InventerE16ScheduleCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
+    this._config = {
+      title: "inVENTer e16 – Zeitpläne",
+      default_profile: "living_room",
+      entity: ""
+    };
     this._selectedProfile = "living_room";
     this._entries = [];
     this._loading = false;
@@ -83,12 +89,14 @@ class InventerE16ScheduleCard extends HTMLElement {
   }
 
   set hass(hass) {
-    const oldHass = this._hass;
     this._hass = hass;
     if (!this._initialFetchDone && hass) {
       this._initialFetchDone = true;
       this._autoDetectEntity();
       this._fetchSchedule();
+    } else if (this._initialFetchDone && hass) {
+      // Re-render when zone profile states change
+      this._render();
     }
   }
 
@@ -96,7 +104,8 @@ class InventerE16ScheduleCard extends HTMLElement {
     this._config = {
       title: "inVENTer e16 – Zeitpläne",
       default_profile: "living_room",
-      ...config
+      entity: "",
+      ...(config || {})
     };
     if (this._config.default_profile && !this._initialFetchDone) {
       this._selectedProfile = this._config.default_profile;
@@ -131,7 +140,7 @@ class InventerE16ScheduleCard extends HTMLElement {
     if (!this._hass) return "";
     if (this._config && this._config.entity) return this._config.entity;
 
-    const fanEntities = Object.keys(this._hass.states).filter((id) => {
+    const fanEntities = Object.keys(this._hass.states || {}).filter((id) => {
       if (!id.startsWith("fan.")) return false;
       const state = this._hass.states[id];
       if (!state || !state.attributes) return false;
@@ -144,21 +153,58 @@ class InventerE16ScheduleCard extends HTMLElement {
     }
 
     // Fallback: search for any fan entity with 'inventer' in the name
-    const namedEntities = Object.keys(this._hass.states).filter(
+    const namedEntities = Object.keys(this._hass.states || {}).filter(
       (id) => id.startsWith("fan.") && id.toLowerCase().includes("inventer")
     );
     return namedEntities[0] || "";
   }
 
-  _getAllE16Fans() {
-    if (!this._hass) return [];
-    return Object.keys(this._hass.states).filter((id) => {
-      if (!id.startsWith("fan.")) return false;
-      const state = this._hass.states[id];
-      if (!state || !state.attributes) return false;
-      const modes = state.attributes.preset_modes || [];
-      return modes.includes("heat_recovery") || id.toLowerCase().includes("inventer");
-    });
+  _getZoneProfileEntities() {
+    if (!this._hass || !this._hass.states) return [];
+    return Object.keys(this._hass.states)
+      .filter((id) => {
+        if (!id.startsWith("select.")) return false;
+        const state = this._hass.states[id];
+        if (!state || !state.attributes) return false;
+        const options = state.attributes.options || [];
+        return options.includes("living_room") && options.includes("bedroom");
+      })
+      .map((id) => {
+        const state = this._hass.states[id];
+        let name = state.attributes.friendly_name || id;
+        name = name.replace(/ Profil$/i, "").replace(/ Profile$/i, "");
+        return {
+          entity_id: id,
+          name: name,
+          currentProfile: state.state
+        };
+      });
+  }
+
+  async _assignProfileToZone(selectEntityId, zoneName) {
+    if (!this._hass) return;
+    const selectedProfObj = PROFILES.find((p) => p.id === this._selectedProfile) || PROFILES[0];
+    try {
+      this._statusMessage = `Weise Profil "${selectedProfObj.name}" der Zone "${zoneName}" zu...`;
+      this._render();
+
+      await this._hass.callService("select", "select_option", {
+        entity_id: selectEntityId,
+        option: this._selectedProfile
+      });
+
+      this._statusMessage = `Profil "${selectedProfObj.name}" für "${zoneName}" aktiviert!`;
+      setTimeout(() => {
+        if (this._statusMessage.includes("aktiviert")) {
+          this._statusMessage = "";
+          this._render();
+        }
+      }, 3500);
+    } catch (err) {
+      console.error("Fehler beim Zuweisen des Profils:", err);
+      this._errorMessage = `Fehler beim Zuweisen: ${err.message || err}`;
+      this._render();
+    }
   }
 
   async _fetchSchedule() {
@@ -332,16 +378,14 @@ class InventerE16ScheduleCard extends HTMLElement {
     const root = this.shadowRoot;
     if (!root) return;
 
-    const entityId = this._getTargetEntity();
-    const fanState = this._hass && this._hass.states[entityId];
-    const friendlyName = fanState?.attributes?.friendly_name || entityId || "inVENTer e16";
-    const allFans = this._getAllE16Fans();
-
     const selectedProfObj = PROFILES.find((p) => p.id === this._selectedProfile) || PROFILES[0];
     const sortedEntries = [...this._entries].sort((a, b) => {
       if (a.time === b.time) return a.entry - b.entry;
       return a.time.localeCompare(b.time);
     });
+
+    const cardTitle = this._config && this._config.title ? this._config.title : "inVENTer e16 – Zeitpläne";
+    const zones = this._getZoneProfileEntities();
 
     root.innerHTML = `
       <style>
@@ -361,9 +405,7 @@ class InventerE16ScheduleCard extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 16px;
-          flex-wrap: wrap;
-          gap: 8px;
+          margin-bottom: 14px;
         }
         .title-area {
           display: flex;
@@ -376,28 +418,15 @@ class InventerE16ScheduleCard extends HTMLElement {
           color: var(--primary-text-color, #212121);
         }
         .subtitle {
-          font-size: 0.85rem;
+          font-size: 0.82rem;
           color: var(--secondary-text-color, #757575);
           margin-top: 2px;
-        }
-        .zone-select-container {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .zone-select {
-          padding: 4px 8px;
-          border-radius: 6px;
-          border: 1px solid var(--divider-color, #e0e0e0);
-          background: var(--card-background-color, #fff);
-          color: var(--primary-text-color, #212121);
-          font-size: 0.85rem;
         }
         .profile-bar {
           display: flex;
           align-items: center;
           gap: 8px;
-          margin-bottom: 16px;
+          margin-bottom: 12px;
           background: var(--secondary-background-color, #f5f5f5);
           padding: 10px 12px;
           border-radius: 8px;
@@ -436,6 +465,70 @@ class InventerE16ScheduleCard extends HTMLElement {
           background: rgba(0,0,0,0.06);
           color: var(--primary-color, #03a9f4);
         }
+
+        /* Zones status & assignment bar */
+        .zones-bar {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 16px;
+          padding: 6px 4px;
+          flex-wrap: wrap;
+        }
+        .zones-label {
+          font-size: 0.82rem;
+          font-weight: 500;
+          color: var(--secondary-text-color, #757575);
+        }
+        .zones-list {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+        .zone-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 10px;
+          border-radius: 16px;
+          border: 1px solid var(--divider-color, #ccc);
+          background: var(--card-background-color, #fff);
+          color: var(--primary-text-color, #212121);
+          font-size: 0.82rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .zone-pill:hover {
+          border-color: var(--primary-color, #03a9f4);
+          background: rgba(3, 169, 244, 0.05);
+        }
+        .zone-pill.active {
+          background: var(--primary-color, #03a9f4);
+          border-color: var(--primary-color, #03a9f4);
+          color: #fff;
+          font-weight: 600;
+        }
+        .zone-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #bdbdbd;
+        }
+        .zone-dot.active {
+          background: #fff;
+        }
+        .zone-status-badge {
+          font-size: 0.72rem;
+        }
+        .zone-status-badge.active {
+          opacity: 0.95;
+        }
+        .zone-status-badge.inactive {
+          color: var(--secondary-text-color, #757575);
+        }
+
         .status-banner {
           background: rgba(76, 175, 80, 0.15);
           color: #2e7d32;
@@ -777,30 +870,9 @@ class InventerE16ScheduleCard extends HTMLElement {
       <ha-card>
         <div class="header">
           <div class="title-area">
-            <span class="title">${this._config.title || "inVENTer e16 – Zeitpläne"}</span>
-            <span class="subtitle">${friendlyName}</span>
+            <span class="title">${cardTitle}</span>
+            <span class="subtitle">Lüftungs-Zeitpläne (Regler-weit)</span>
           </div>
-
-          ${
-            allFans.length > 1
-              ? `
-              <div class="zone-select-container">
-                <label for="zone-select" class="subtitle">Zone:</label>
-                <select id="zone-select" class="zone-select">
-                  ${allFans
-                    .map(
-                      (id) => `
-                    <option value="${id}" ${id === entityId ? "selected" : ""}>
-                      ${this._hass?.states[id]?.attributes?.friendly_name || id}
-                    </option>
-                  `
-                    )
-                    .join("")}
-                </select>
-              </div>
-            `
-              : ""
-          }
         </div>
 
         <div class="profile-bar">
@@ -835,6 +907,38 @@ class InventerE16ScheduleCard extends HTMLElement {
             </svg>
           </button>
         </div>
+
+        ${
+          zones.length > 0
+            ? `
+          <div class="zones-bar">
+            <span class="zones-label">Profil aktiv in:</span>
+            <div class="zones-list">
+              ${zones
+                .map((z) => {
+                  const isActive = z.currentProfile === this._selectedProfile;
+                  return `
+                  <button type="button" class="zone-pill ${isActive ? "active" : ""}"
+                          data-entity="${z.entity_id}" data-name="${z.name}"
+                          title="${
+                            isActive
+                              ? `Dieses Profil ist aktuell in "${z.name}" aktiv`
+                              : `Klicken, um "${selectedProfObj.name}" für "${z.name}" zu aktivieren`
+                          }">
+                    <span class="zone-dot ${isActive ? "active" : ""}"></span>
+                    <span class="zone-name">${z.name}</span>
+                    <span class="zone-status-badge ${isActive ? "active" : "inactive"}">
+                      ${isActive ? "✓ Aktiv" : "+ Zuweisen"}
+                    </span>
+                  </button>
+                `;
+                })
+                .join("")}
+            </div>
+          </div>
+        `
+            : ""
+        }
 
         ${
           this._statusMessage
@@ -895,7 +999,7 @@ class InventerE16ScheduleCard extends HTMLElement {
                       <div class="day-chips">
                         ${WEEKDAYS.map(
                           (w) => `
-                          <span class="day-chip ${entry.days.includes(w.id) ? "active" : ""}">
+                          <span class="day-chip ${entry.days && entry.days.includes(w.id) ? "active" : ""}">
                             ${w.label}
                           </span>
                         `
@@ -980,7 +1084,7 @@ class InventerE16ScheduleCard extends HTMLElement {
           <div class="day-toggle-group">
             ${WEEKDAYS.map(
               (w) => `
-              <button type="button" class="day-toggle ${entry.days.includes(w.id) ? "selected" : ""}" data-day="${w.id}">
+              <button type="button" class="day-toggle ${entry.days && entry.days.includes(w.id) ? "selected" : ""}" data-day="${w.id}">
                 ${w.label}
               </button>
             `
@@ -1057,16 +1161,14 @@ class InventerE16ScheduleCard extends HTMLElement {
       });
     }
 
-    // Zone selector
-    const zoneSel = root.getElementById("zone-select");
-    if (zoneSel) {
-      zoneSel.addEventListener("change", (e) => {
-        if (this._config) {
-          this._config = { ...this._config, entity: e.target.value };
-        }
-        this._fetchSchedule();
+    // Zone assignment buttons
+    root.querySelectorAll(".zone-pill").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const entityId = btn.getAttribute("data-entity");
+        const zoneName = btn.getAttribute("data-name");
+        this._assignProfileToZone(entityId, zoneName);
       });
-    }
+    });
 
     // Add entry button
     const addBtn = root.getElementById("add-entry-btn");
@@ -1122,6 +1224,7 @@ class InventerE16ScheduleCard extends HTMLElement {
       root.querySelectorAll(".day-toggle").forEach((btn) => {
         btn.addEventListener("click", () => {
           const day = btn.getAttribute("data-day");
+          if (!this._editingEntry.days) this._editingEntry.days = [];
           const idx = this._editingEntry.days.indexOf(day);
           if (idx >= 0) {
             if (this._editingEntry.days.length > 1) {
@@ -1193,7 +1296,7 @@ class InventerE16ScheduleCard extends HTMLElement {
             return;
           }
 
-          if (this._editingEntry.days.length === 0) {
+          if (!this._editingEntry.days || this._editingEntry.days.length === 0) {
             alert("Bitte mindestens einen Wochentag auswählen.");
             return;
           }
@@ -1215,8 +1318,22 @@ class InventerE16ScheduleCard extends HTMLElement {
  * Visual Editor for Lovelace Card UI
  */
 class InventerE16ScheduleCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this._config = {
+      title: "inVENTer e16 – Zeitpläne",
+      entity: "",
+      default_profile: "living_room"
+    };
+  }
+
   setConfig(config) {
-    this._config = config;
+    this._config = {
+      title: "inVENTer e16 – Zeitpläne",
+      entity: "",
+      default_profile: "living_room",
+      ...(config || {})
+    };
     this.render();
   }
 
@@ -1227,13 +1344,24 @@ class InventerE16ScheduleCardEditor extends HTMLElement {
 
   render() {
     if (!this._hass) return;
-    const fanEntities = Object.keys(this._hass.states).filter((id) => id.startsWith("fan."));
+    if (!this._config) {
+      this._config = {
+        title: "inVENTer e16 – Zeitpläne",
+        entity: "",
+        default_profile: "living_room"
+      };
+    }
+    const fanEntities = Object.keys(this._hass.states || {}).filter((id) => id.startsWith("fan."));
+
+    const currentTitle = this._config?.title || "inVENTer e16 – Zeitpläne";
+    const currentEntity = this._config?.entity || "";
+    const currentProfile = this._config?.default_profile || "living_room";
 
     this.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 12px; padding: 12px 0;">
         <div>
           <label style="display:block; font-weight:500; margin-bottom:4px;">Titel der Karte:</label>
-          <input type="text" id="input-title" value="${this._config.title || "inVENTer e16 – Zeitpläne"}"
+          <input type="text" id="input-title" value="${currentTitle}"
                  style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box;" />
         </div>
         <div>
@@ -1243,8 +1371,8 @@ class InventerE16ScheduleCardEditor extends HTMLElement {
             ${fanEntities
               .map(
                 (id) => `
-              <option value="${id}" ${this._config.entity === id ? "selected" : ""}>
-                ${this._hass.states[id]?.attributes?.friendly_name || id} (${id})
+              <option value="${id}" ${currentEntity === id ? "selected" : ""}>
+                ${this._hass.states?.[id]?.attributes?.friendly_name || id} (${id})
               </option>
             `
               )
@@ -1256,26 +1384,27 @@ class InventerE16ScheduleCardEditor extends HTMLElement {
           <select id="input-profile" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box;">
             ${PROFILES.map(
               (p) => `
-              <option value="${p.id}" ${this._config.default_profile === p.id ? "selected" : ""}>
+              <option value="${p.id}" ${currentProfile === p.id ? "selected" : ""}>
                 ${p.name}
               </option>
             `
-            ).join("")}
+              )
+              .join("")}
           </select>
         </div>
       </div>
     `;
 
     const changeHandler = () => {
-      const title = this.querySelector("#input-title").value;
-      const entity = this.querySelector("#input-entity").value;
-      const default_profile = this.querySelector("#input-profile").value;
+      const titleInput = this.querySelector("#input-title");
+      const entityInput = this.querySelector("#input-entity");
+      const profileInput = this.querySelector("#input-profile");
 
       const newConfig = {
-        ...this._config,
-        title: title || "inVENTer e16 – Zeitpläne",
-        entity: entity,
-        default_profile: default_profile
+        ...(this._config || {}),
+        title: titleInput ? titleInput.value : currentTitle,
+        entity: entityInput ? entityInput.value : currentEntity,
+        default_profile: profileInput ? profileInput.value : currentProfile
       };
 
       const event = new CustomEvent("config-changed", {
@@ -1286,9 +1415,14 @@ class InventerE16ScheduleCardEditor extends HTMLElement {
       this.dispatchEvent(event);
     };
 
-    this.querySelector("#input-title").addEventListener("change", changeHandler);
-    this.querySelector("#input-entity").addEventListener("change", changeHandler);
-    this.querySelector("#input-profile").addEventListener("change", changeHandler);
+    const titleEl = this.querySelector("#input-title");
+    if (titleEl) titleEl.addEventListener("change", changeHandler);
+
+    const entityEl = this.querySelector("#input-entity");
+    if (entityEl) entityEl.addEventListener("change", changeHandler);
+
+    const profileEl = this.querySelector("#input-profile");
+    if (profileEl) profileEl.addEventListener("change", changeHandler);
   }
 }
 
@@ -1311,4 +1445,3 @@ console.info(
   "color: white; background: #03a9f4; font-weight: 700;",
   "color: #03a9f4; background: white; font-weight: 700;"
 );
-
