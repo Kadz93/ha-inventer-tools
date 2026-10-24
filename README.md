@@ -7,6 +7,10 @@ Testing environment is a multi zone setup with iv14zero and twin+ vents.
 I am an experienced hardware technician and software dev but use 100% AI to code this in my spare time. (as well as the main repo i guess, no disclaimer but lots of agent mds etc)
 I test everything on my own setup before releasing it into my main, bugs will appear :)
 
+Additional features:
+- multi zone support
+- support all modes for the fans 
+- lovelace card for schedule management
 
 # inVENTer Easy Connect e16 for Home Assistant
 
