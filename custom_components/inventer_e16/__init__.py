@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Tobias Krautkremer
 """inVENTer Easy Connect e16 - local control over Wi-Fi (TLS-PSK)."""
+from pathlib import Path
+
 from homeassistant.const import Platform
 from homeassistant.helpers import device_registry as dr
 
@@ -9,6 +11,37 @@ from .const import CONF_DEVICE_ID, CONF_FIRMWARE_CATALOG, DOMAIN
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.FAN, Platform.BUTTON,
              Platform.NUMBER, Platform.SELECT, Platform.UPDATE]
+CARD_URL = "/inventer_e16/inventer-e16-schedule-card.js"
+CARD_PATH = Path(__file__).parent / "frontend" / "inventer-e16-schedule-card.js"
+
+
+async def _async_register_frontend(hass):
+    """Register custom card with Home Assistant frontend."""
+    if hass.data.get(DOMAIN, {}).get("frontend_registered"):
+        return
+    hass.data.setdefault(DOMAIN, {})["frontend_registered"] = True
+
+    if not CARD_PATH.is_file():
+        return
+
+    try:
+        if hasattr(hass.http, "async_register_static_paths"):
+            from homeassistant.components.http import StaticPathConfig
+
+            await hass.http.async_register_static_paths([
+                StaticPathConfig(CARD_URL, str(CARD_PATH), cache_headers=False)
+            ])
+        elif hasattr(hass.http, "register_static_path"):
+            hass.http.register_static_path(CARD_URL, str(CARD_PATH), cache_headers=False)
+    except Exception:
+        pass
+
+    try:
+        from homeassistant.components.frontend import add_extra_js_url
+
+        add_extra_js_url(hass, CARD_URL)
+    except Exception:
+        pass
 
 
 async def async_migrate_entry(hass, entry):
@@ -56,6 +89,7 @@ async def async_setup_entry(hass, entry):
                 via_device_id=data.main_device_id,
             )
     entry.runtime_data = data
+    await _async_register_frontend(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     # No update listener: it would reload on every entry change, even when Home Assistant only
     # records a DHCP discovery key. Options reload via OptionsFlowWithReload, flows via their abort.
