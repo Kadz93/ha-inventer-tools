@@ -120,6 +120,7 @@ class E16InfoCoordinator(DataUpdateCoordinator):
 
     async def async_set_device_zone(self, address: int, zone_id: int):
         LOGGER.debug("e16 set device %s to zone %s", address, zone_id)
+        await self.async_request_refresh()
         try:
             await self.hass.async_add_executor_job(self.client.set_device_zone, address, zone_id)
         except (E16AuthError, OSError, ValueError) as error:

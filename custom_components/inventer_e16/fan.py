@@ -213,7 +213,7 @@ class E16Fan(E16Entity, FanEntity):
 
     async def async_get_devices(self, refresh=False):
         data = self._entry.runtime_data
-        if refresh:
+        if refresh or data.info.data is None:
             await data.info.async_request_refresh()
         info_data = data.info.data or {}
         zone_names = {z.data["zone_id"]: (z.data.get("name") or f"Zone {z.data['zone_id']}")

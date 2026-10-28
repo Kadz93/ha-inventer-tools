@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Tobias Krautkremer
 """inVENTer Easy Connect e16 - local control over Wi-Fi (TLS-PSK)."""
+import logging
 from pathlib import Path
 
 from homeassistant.const import Platform
@@ -8,6 +9,8 @@ from homeassistant.helpers import device_registry as dr
 
 from . import coordinator
 from .const import CONF_DEVICE_ID, CONF_FIRMWARE_CATALOG, DOMAIN
+
+LOGGER = logging.getLogger(__package__)
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.FAN, Platform.BUTTON,
              Platform.NUMBER, Platform.SELECT, Platform.UPDATE]
@@ -18,7 +21,7 @@ CARDS = [
 
 
 async def _async_register_frontend(hass):
-    """Register custom cards with Home Assistant frontend."""
+    """Register custom cards as Lovelace resources so the mobile app loads them synchronously."""
     if hass.data.get(DOMAIN, {}).get("frontend_registered"):
         return
     hass.data.setdefault(DOMAIN, {})["frontend_registered"] = True
@@ -27,6 +30,7 @@ async def _async_register_frontend(hass):
     if not static_paths:
         return
 
+    # 1. Serve the JS files via HTTP
     try:
         if hasattr(hass.http, "async_register_static_paths"):
             from homeassistant.components.http import StaticPathConfig
@@ -41,13 +45,34 @@ async def _async_register_frontend(hass):
     except Exception:
         pass
 
+    # 2. Register as Lovelace resources (synchronous load – works in the mobile app).
+    #    Falls back to add_extra_js_url for YAML-mode dashboards.
+    registered_as_resource = False
     try:
-        from homeassistant.components.frontend import add_extra_js_url
+        lovelace_data = hass.data.get("lovelace")
+        if lovelace_data and hasattr(lovelace_data, "resources"):
+            from homeassistant.components.lovelace.resources import ResourceStorageCollection
 
-        for url, _ in static_paths:
-            add_extra_js_url(hass, url)
-    except Exception:
-        pass
+            resources = lovelace_data.resources
+            if isinstance(resources, ResourceStorageCollection):
+                if not resources.loaded:
+                    await resources.async_load()
+                existing = {item["url"].split("?")[0] for item in resources.async_items()}
+                for url, _ in static_paths:
+                    if url not in existing:
+                        await resources.async_create_item({"res_type": "module", "url": url})
+                registered_as_resource = True
+    except Exception as err:
+        LOGGER.debug("Could not register Lovelace resources, falling back to extra_js_url: %s", err)
+
+    if not registered_as_resource:
+        try:
+            from homeassistant.components.frontend import add_extra_js_url
+
+            for url, _ in static_paths:
+                add_extra_js_url(hass, url)
+        except Exception:
+            pass
 
 
 async def async_migrate_entry(hass, entry):

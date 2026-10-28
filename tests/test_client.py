@@ -288,3 +288,34 @@ def test_user_override_with_zone_index(monkeypatch):
     read_cmd = connection.sent[1]
     assert read_cmd[3] == client.T_ZONE_VIEW
     assert read_cmd[10] == 1
+
+
+def test_device_field_payload():
+    # Address 2, field 1 (DF_ZONE) -> 2 * 65536 + 1 = 131073
+    assert client.field_payload(2 * 65536 + client.DF_ZONE, b"\x03").hex() == "ba0a07050100020003"
+    # Address 1, field 0 (DF_NAME)
+    assert client.field_payload(1 * 65536 + client.DF_NAME, b"Kueche").hex() == "ba0a070a000001004b7565636865"
+
+
+def test_set_device_zone(monkeypatch):
+    connection = RecordingConnection(b"")
+    c = _client_with(monkeypatch, connection)
+    c.set_device_zone(2, 3)
+    assert len(connection.sent) == 1
+    sent = connection.sent[0]
+    assert sent[3] == client.T_DEVICE_FIELD
+    assert sent[4] == client.UPDATE
+    assert sent[10:] == client.field_payload(2 * 65536 + client.DF_ZONE, bytes([3]))
+
+
+def test_set_device_zone_validation(monkeypatch):
+    c = _client_with(monkeypatch, FakeConnection(b""))
+    with pytest.raises(ValueError):
+        c.set_device_zone(-1, 1)
+    with pytest.raises(ValueError):
+        c.set_device_zone(client.MAX_DEVICES, 1)
+    with pytest.raises(ValueError):
+        c.set_device_zone(1, 0)
+    with pytest.raises(ValueError):
+        c.set_device_zone(1, client.MAX_ZONES + 1)
+
