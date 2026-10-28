@@ -86,14 +86,17 @@ class InventerE16ScheduleCard extends HTMLElement {
     this._editingEntry = null; // null or { entry, time, days, mode, speed, isNew }
     this._deleteConfirm = null; // entry number to confirm deletion
     this._initialFetchDone = false;
+    this._pulledProfiles = new Set();
   }
 
   set hass(hass) {
     this._hass = hass;
     if (!this._initialFetchDone && hass) {
-      this._initialFetchDone = true;
-      this._autoDetectEntity();
-      this._fetchSchedule();
+      const entityId = this._getTargetEntity();
+      if (entityId) {
+        this._initialFetchDone = true;
+        this._fetchSchedule();
+      }
     } else if (this._initialFetchDone && hass) {
       // Re-render when zone profile states change
       this._render();
@@ -211,6 +214,7 @@ class InventerE16ScheduleCard extends HTMLElement {
     const entityId = this._getTargetEntity();
     if (!entityId || !this._hass) {
       this._errorMessage = "Keine inVENTer-Lüfter-Entität gefunden. Bitte in den Karteneinstellungen auswählen.";
+      this._pulledProfiles.delete(this._selectedProfile);
       this._render();
       return;
     }
@@ -240,9 +244,11 @@ class InventerE16ScheduleCard extends HTMLElement {
       } else {
         this._entries = [];
       }
+      this._pulledProfiles.add(this._selectedProfile);
     } catch (err) {
       console.error("Fehler beim Abrufen des Zeitprogramms:", err);
       this._errorMessage = "Fehler beim Laden: " + (err.message || err);
+      this._pulledProfiles.delete(this._selectedProfile);
       this._entries = [];
     } finally {
       this._loading = false;
@@ -253,6 +259,20 @@ class InventerE16ScheduleCard extends HTMLElement {
   async _saveEntry(entryData) {
     const entityId = this._getTargetEntity();
     if (!entityId) return;
+
+    // Sicherstellen, dass vor dem Schreiben erst mindestens 1x vom Regler gepulled wurde
+    if (!this._pulledProfiles.has(this._selectedProfile)) {
+      this._loading = true;
+      this._statusMessage = "Lade aktuellen Zeitplan vom Regler vor dem Speichern...";
+      this._render();
+      await this._fetchSchedule();
+      if (!this._pulledProfiles.has(this._selectedProfile)) {
+        this._errorMessage = "Fehler: Zeitplan konnte nicht vom Regler abgerufen werden. Speichern abgebrochen.";
+        this._loading = false;
+        this._render();
+        return;
+      }
+    }
 
     this._loading = true;
     this._errorMessage = "";
@@ -295,6 +315,20 @@ class InventerE16ScheduleCard extends HTMLElement {
   async _deleteEntry(entryIndex) {
     const entityId = this._getTargetEntity();
     if (!entityId) return;
+
+    // Sicherstellen, dass vor dem Löschen erst mindestens 1x vom Regler gepulled wurde
+    if (!this._pulledProfiles.has(this._selectedProfile)) {
+      this._loading = true;
+      this._statusMessage = "Lade aktuellen Zeitplan vom Regler vor dem Löschen...";
+      this._render();
+      await this._fetchSchedule();
+      if (!this._pulledProfiles.has(this._selectedProfile)) {
+        this._errorMessage = "Fehler: Zeitplan konnte nicht vom Regler abgerufen werden. Löschen abgebrochen.";
+        this._loading = false;
+        this._render();
+        return;
+      }
+    }
 
     this._loading = true;
     this._errorMessage = "";
@@ -340,6 +374,11 @@ class InventerE16ScheduleCard extends HTMLElement {
   }
 
   _startNewEntry() {
+    if (!this._pulledProfiles.has(this._selectedProfile)) {
+      this._fetchSchedule();
+      return;
+    }
+
     const freeSlots = this._getFreeSlots();
     if (freeSlots.length === 0) {
       alert("Alle 32 Plätze dieses Profils sind belegt.");
@@ -358,6 +397,11 @@ class InventerE16ScheduleCard extends HTMLElement {
   }
 
   _startEditEntry(entry) {
+    if (!this._pulledProfiles.has(this._selectedProfile)) {
+      this._fetchSchedule();
+      return;
+    }
+
     this._editingEntry = {
       isNew: false,
       entry: entry.entry,
@@ -379,6 +423,7 @@ class InventerE16ScheduleCard extends HTMLElement {
     if (!root) return;
 
     const selectedProfObj = PROFILES.find((p) => p.id === this._selectedProfile) || PROFILES[0];
+    const hasPulled = this._pulledProfiles.has(this._selectedProfile);
     const sortedEntries = [...this._entries].sort((a, b) => {
       if (a.time === b.time) return a.entry - b.entry;
       return a.time.localeCompare(b.time);
@@ -970,11 +1015,31 @@ class InventerE16ScheduleCard extends HTMLElement {
             : `
           <div class="entries-info">
             <span><strong>${selectedProfObj.name}</strong> (${this._entries.length} / 32 Einträge belegt)</span>
-            ${this._loading ? "<span>Lade...</span>" : ""}
+            ${this._loading ? "<span>Lade...</span>" : !hasPulled ? "<span>Nicht synchronisiert</span>" : ""}
           </div>
 
           ${
-            sortedEntries.length === 0 && !this._loading
+            !hasPulled && this._loading
+              ? `
+              <div class="empty-state">
+                <svg viewBox="0 0 24 24" class="empty-state-icon">
+                  <path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/>
+                </svg>
+                <div>Lade aktuellen Zeitplan vom Regler...</div>
+                <div style="font-size: 0.8rem; margin-top: 4px;">Aktuelle Einträge werden synchronisiert.</div>
+              </div>
+            `
+              : !hasPulled && !this._loading
+              ? `
+              <div class="empty-state">
+                <svg viewBox="0 0 24 24" class="empty-state-icon">
+                  <path fill="currentColor" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/>
+                </svg>
+                <div>Zeitplan noch nicht vom Regler geladen.</div>
+                <div style="font-size: 0.8rem; margin-top: 4px;">Klicke unten, um den aktuellen Zeitplan vom Regler abzurufen.</div>
+              </div>
+            `
+              : sortedEntries.length === 0 && !this._loading
               ? `
               <div class="empty-state">
                 <svg viewBox="0 0 24 24" class="empty-state-icon">
@@ -1028,9 +1093,9 @@ class InventerE16ScheduleCard extends HTMLElement {
               .join("")}
           </div>
 
-          <button id="add-entry-btn" class="btn-add">
+          <button id="add-entry-btn" class="btn-add" ${!hasPulled || this._loading ? "disabled style='opacity: 0.6; cursor: not-allowed;'" : ""}>
             <svg viewBox="0 0 24 24" style="width: 20px; height: 20px;"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-            Neuen Eintrag hinzufügen
+            ${this._loading ? "Lade Zeitplan vom Regler..." : !hasPulled ? "Erst Zeitplan vom Regler laden" : "Neuen Eintrag hinzufügen"}
           </button>
         `
         }
@@ -1041,12 +1106,6 @@ class InventerE16ScheduleCard extends HTMLElement {
   }
 
   _renderEditor(entry) {
-    const freeSlots = this._getFreeSlots();
-    if (!entry.isNew && !freeSlots.includes(entry.entry)) {
-      freeSlots.push(entry.entry);
-      freeSlots.sort((a, b) => a - b);
-    }
-
     const isPause = entry.mode === "pause" || entry.mode === "pause_open";
 
     return `
@@ -1057,26 +1116,8 @@ class InventerE16ScheduleCard extends HTMLElement {
         </div>
 
         <div class="form-row">
-          <div class="time-slot-row">
-            <div>
-              <label class="form-label" for="edit-time">Startzeit:</label>
-              <input type="time" id="edit-time" class="time-input" value="${entry.time}" required />
-            </div>
-            <div>
-              <label class="form-label" for="edit-slot">Speicherplatz (Slot):</label>
-              <select id="edit-slot" class="slot-select" ${!entry.isNew ? "disabled" : ""}>
-                ${freeSlots
-                  .map(
-                    (slot) => `
-                  <option value="${slot}" ${slot === entry.entry ? "selected" : ""}>
-                    Slot #${slot}
-                  </option>
-                `
-                  )
-                  .join("")}
-              </select>
-            </div>
-          </div>
+          <label class="form-label" for="edit-time">Startzeit:</label>
+          <input type="time" id="edit-time" class="time-input" value="${entry.time}" required />
         </div>
 
         <div class="form-row">
@@ -1149,6 +1190,7 @@ class InventerE16ScheduleCard extends HTMLElement {
         this._selectedProfile = e.target.value;
         this._editingEntry = null;
         this._deleteConfirm = null;
+        this._entries = [];
         this._fetchSchedule();
       });
     }
@@ -1174,6 +1216,10 @@ class InventerE16ScheduleCard extends HTMLElement {
     const addBtn = root.getElementById("add-entry-btn");
     if (addBtn) {
       addBtn.addEventListener("click", () => {
+        if (!this._pulledProfiles.has(this._selectedProfile)) {
+          this._fetchSchedule();
+          return;
+        }
         this._startNewEntry();
       });
     }
@@ -1287,9 +1333,7 @@ class InventerE16ScheduleCard extends HTMLElement {
       if (saveBtn) {
         saveBtn.addEventListener("click", () => {
           const timeInput = root.getElementById("edit-time");
-          const slotSelect = root.getElementById("edit-slot");
           const timeVal = timeInput ? timeInput.value : this._editingEntry.time;
-          const slotVal = slotSelect ? slotSelect.value : this._editingEntry.entry;
 
           if (!timeVal) {
             alert("Bitte eine Uhrzeit angeben.");
@@ -1302,7 +1346,7 @@ class InventerE16ScheduleCard extends HTMLElement {
           }
 
           this._saveEntry({
-            entry: slotVal,
+            entry: this._editingEntry.entry,
             time: timeVal,
             days: this._editingEntry.days,
             mode: this._editingEntry.mode,

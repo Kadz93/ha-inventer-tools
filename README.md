@@ -7,10 +7,16 @@ Testing environment is a multi zone setup with iv14zero and twin+ vents.
 I am an experienced hardware technician and software dev but use 100% AI to code this in my spare time. (as well as the main repo i guess, no disclaimer but lots of agent mds etc)
 I test everything on my own setup before releasing it into my main, bugs will appear :)
 
-Additional features:
-- multi zone support
-- support all modes for the fans 
-- lovelace card for schedule management
+Additional features on this branch (`time-schedule-card`):
+- **Multi-zone support:** Manage multi-zone setups, zone fans, statuses, and assign profiles per zone.
+- **Support for all fan modes:** Full control over `heat_recovery`, `ventilation`, and both pause flap modes (`pause` flap closed, `pause_open` flap open).
+- **Lovelace Custom Card (`inventer-e16-schedule-card`):** View, add, edit, and delete time schedule points across all standard and custom ventilation profiles (1–15).
+- **Automated slot allocation:** During profile creation, free memory slots (Speicherplätze 0–31) are assigned automatically without requiring manual slot selection.
+- **Controller pre-write sync:** The integration / card always pulls the schedule from the physical controller first before executing any write or delete operation.
+
+> [!WARNING]
+> **Wichtiger Warnhinweis zu Zeitplänen (Time Tables) / Important Warning:**
+> Managing time schedules directly modifies the internal timetable memory of your inVENTer e16 controller. While the integration ensures that timetable data is always pulled from the controller first before anything is written and verifies every write back, **if you notice any issues, inconsistencies, or unexpected controller behavior with the timetables, immediately deactivate/disable this integration in Home Assistant** (*Settings → Devices & Services → inVENTer e16 → 3 dots → Disable*). Deactivating halts all communication so that the controller can run undisturbed and can be checked or restored via the official inVENTer app.
 
 # inVENTer Easy Connect e16 for Home Assistant
 
@@ -95,7 +101,12 @@ there is no undo.
 
 The integration includes a built-in Lovelace custom card (`inventer-e16-schedule-card`) that allows you to view, add, edit, and delete time schedule points for all ventilation profiles directly in your Home Assistant dashboard:
 
+> [!WARNING]
+> **Warnhinweis (Wichtig):** Sollten Probleme oder Unregelmäßigkeiten mit den Zeitplänen (Time Tables) auf dem Regler auftreten, bitte die Integration vorübergehend in Home Assistant deaktivieren (*Einstellungen → Geräte & Dienste → inVENTer e16 → ⋮ → Deaktivieren*).
+
 - **Profiles supported:** Standard profiles (*living_room / Wohnzimmer*, *bedroom / Schlafzimmer*, *childrens_room*, *bathroom*, *kitchen*, *holiday*) as well as all 9 custom profiles (*custom_1* to *custom_9* / *Benutzerdefiniertes Profil 1–9*).
+- **Automated slot allocation:** Free memory slots (Speicherplätze 0–31) are assigned automatically when creating new entries; manual slot selection is not required.
+- **Controller pre-write sync:** The card strictly pulls the current timetable from the controller first before allowing additions, modifications, or deletions to ensure controller data is always synchronized.
 - **Days:** Any combination of weekdays (Monday through Sunday) with one-click presets (*Workdays Mon–Fri*, *Weekend Sat–Sun*, *All days*).
 - **Start time:** Configurable in 24-hour time format (`HH:MM`).
 - **Operating modes:**
@@ -104,7 +115,7 @@ The integration includes a built-in Lovelace custom card (`inventer-e16-schedule
   - ⏸️ *Pause with flap closed* (`pause`, mode 3) – fans stopped, lid closed
   - 🪟 *Pause with flap open* (`pause_open`, mode 4) – fans stopped, lid open for passive airflow
 - **Fan speed:** Levels 1 to 4 (automatically deactivated / set to 0 in pause modes).
-- **Slot management:** Visual overview of occupied and free slots (up to 32 entries per profile).
+- **Slot overview:** Visual overview of occupied slots (e.g. 5 / 32 entries used).
 
 #### Prerequisites & Required Entities
 
