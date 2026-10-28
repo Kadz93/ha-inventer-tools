@@ -196,6 +196,38 @@ cards:
 | `title` | string | `inVENTer e16 – Zeitpläne` | Custom title displayed in the card header. |
 | `default_profile` | string | `living_room` | Profile selected by default when loading the card (`living_room`, `bedroom`, `childrens_room`, `bathroom`, `kitchen`, `holiday`, or `custom_1` .. `custom_9`). |
 
+### Lovelace Custom Card: Device & Zone Management (Geräte- & Zonenverwaltung)
+
+The integration also includes a Lovelace custom card (`inventer-e16-devices-card`) that displays all detected wireless devices (fans, temperature/humidity sensors, battery sensors, controller) and lets you assign them to any configured ventilation zone:
+
+- **All detected devices at a glance:** View device names, bus addresses, models (`iV14-Zero`, `iV-Twin+`, `Indoor sensor`, etc.), online status, radio signal levels (dBm), battery levels, runtimes, and live telemetry.
+- **Filter options:** Filter between All devices, Fans, Sensors, and Controller, or view devices belonging to a specific zone.
+- **1-Click zone assignment:** Assign any fan or sensor to another zone using the interactive zone buttons. The card optimistically updates the assignment in the UI and synchronizes the change directly with the e16 controller via the `set_device_zone` service.
+- **Auto-detection:** Automatically discovers configured zones and devices via native integration services (`get_devices` and `set_device_zone`).
+
+#### Card Setup
+
+Served automatically by the integration at:
+```
+/inventer_e16/inventer-e16-devices-card.js
+```
+
+Or add as a manual Lovelace resource if using YAML dashboards (`URL: /inventer_e16/inventer-e16-devices-card.js`, JavaScript Module).
+
+**Card configuration in Lovelace dashboard:**
+
+```yaml
+type: custom:inventer-e16-devices-card
+title: inVENTer e16 – Geräte & Zonen
+```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `type` | string | **required** | `custom:inventer-e16-devices-card` |
+| `entity` | string | *auto-detect* | The `fan` entity ID of an inVENTer zone (e.g. `fan.inventer_living_room`). If omitted, automatically detects the first e16 fan. |
+| `title` | string | `inVENTer e16 – Geräte & Zonen` | Custom title displayed in the card header. |
+
+
 ## Requirements
 
 - Easy Connect e16 with Wi-Fi module, connected to your network (set up with the official app)
