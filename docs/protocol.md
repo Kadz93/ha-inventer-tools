@@ -180,7 +180,7 @@ temperature, 3 comfort outdoor temperature, 4 RH threshold, 5 CO₂ threshold, 6
 | Offset | Type | Content |
 |---:|---|---|
 | 0 | u8 | Address |
-| 1 | u8 | Device type: 1 controller, 2/3 fan unit, 4 indoor T/RH sensor, 5 outdoor T/RH sensor, 6 CO₂ sensor, 8 alarm interface, 12 battery sensor, 21 Wi-Fi module, … |
+| 1 | u8 | Device type: 1 controller, 2 fan unit (iV14-Zero), 4 indoor T/RH sensor, 5 outdoor T/RH sensor, 6 CO₂ sensor, 8 alarm interface, 12 battery sensor, 21 Wi-Fi module, 27 fan unit (iV-Twin+), … |
 | 2 | u8 | Hardware type (1 controller, 2 fan, 3 sensor) |
 | 3 | u8 | Zone id |
 | 4 | u32 | Status bits: 1 offline, 2 online, 4 config pending, 8/16/32 firmware update in progress/ready/failed, 64 battery low, 128 battery critical, 1024 device lost, 2048 alarm, 8192 service due soon, 16384 filter due soon, 32768 service expired, 65536 filter expired, 131072 time not set |

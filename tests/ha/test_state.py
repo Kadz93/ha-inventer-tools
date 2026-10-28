@@ -9,7 +9,7 @@ import pytest
 
 from custom_components.inventer_e16.client import CMD_ZONE_SPEED_MODE, FAN_HEAT_RECOVERY, FAN_OFF, FAN_STOP, FAN_VENTILATION, FOREVER
 from custom_components.inventer_e16.fan import PROGRAM_PROFILES, E16Fan, program_record, program_response
-from custom_components.inventer_e16.select import E16Mode, MODE_TO_FAN
+from custom_components.inventer_e16.select import E16Mode, E16Profile, MODE_TO_FAN, PROFILES
 from custom_components.inventer_e16.sensor import override_active
 
 
@@ -73,6 +73,16 @@ def test_time_program_record_from_service_fields():
 
 def test_mode_select_options():
     assert list(MODE_TO_FAN) == ["heat_recovery", "ventilation", "pause", "pause_open"]
+
+
+def test_profile_select_options():
+    coordinator = SimpleNamespace(data={"profile": 1})
+    entity = SimpleNamespace(coordinator=coordinator, _current=lambda: "bedroom")
+    options = E16Profile.options.fget(entity)
+    assert "bedroom" in options
+    assert "custom_1" in options
+    assert "custom_2" in options
+    assert "custom_9" in options
 
 
 @pytest.mark.parametrize(("zone", "expected"), [

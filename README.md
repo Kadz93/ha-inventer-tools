@@ -7,6 +7,16 @@ Testing environment is a multi zone setup with iv14zero and twin+ vents.
 I am an experienced hardware technician and software dev but use 100% AI to code this in my spare time. (as well as the main repo i guess, no disclaimer but lots of agent mds etc)
 I test everything on my own setup before releasing it into my main, bugs will appear :)
 
+Additional features on this branch (`time-schedule-card`):
+- **Multi-zone support:** Manage multi-zone setups, zone fans, statuses, and assign profiles per zone.
+- **Support for all fan modes:** Full control over `heat_recovery`, `ventilation`, and both pause flap modes (`pause` flap closed, `pause_open` flap open).
+- **Lovelace Custom Card (`inventer-e16-schedule-card`):** View, add, edit, and delete time schedule points across all standard and custom ventilation profiles (1–15).
+- **Automated slot allocation:** During profile creation, free memory slots (Speicherplätze 0–31) are assigned automatically without requiring manual slot selection.
+- **Controller pre-write sync:** The integration / card always pulls the schedule from the physical controller first before executing any write or delete operation.
+
+> [!WARNING]
+> **Wichtiger Warnhinweis zu Zeitplänen (Time Tables) / Important Warning:**
+> Managing time schedules directly modifies the internal timetable memory of your inVENTer e16 controller. While the integration ensures that timetable data is always pulled from the controller first before anything is written and verifies every write back, **if you notice any issues, inconsistencies, or unexpected controller behavior with the timetables, immediately deactivate/disable this integration in Home Assistant** (*Settings → Devices & Services → inVENTer e16 → 3 dots → Disable*). Deactivating halts all communication so that the controller can run undisturbed and can be checked or restored via the official inVENTer app.
 
 # inVENTer Easy Connect e16 for Home Assistant
 
@@ -86,6 +96,105 @@ data:
 
 The change applies whenever that profile is active. Read the program first and keep a copy –
 there is no undo.
+
+### Lovelace Custom Card: Schedule Editor (Zeitplan-Editor)
+
+The integration includes a built-in Lovelace custom card (`inventer-e16-schedule-card`) that allows you to view, add, edit, and delete time schedule points for all ventilation profiles directly in your Home Assistant dashboard:
+
+> [!WARNING]
+> **Warnhinweis (Wichtig):** Sollten Probleme oder Unregelmäßigkeiten mit den Zeitplänen (Time Tables) auf dem Regler auftreten, bitte die Integration vorübergehend in Home Assistant deaktivieren (*Einstellungen → Geräte & Dienste → inVENTer e16 → ⋮ → Deaktivieren*).
+
+- **Profiles supported:** Standard profiles (*living_room / Wohnzimmer*, *bedroom / Schlafzimmer*, *childrens_room*, *bathroom*, *kitchen*, *holiday*) as well as all 9 custom profiles (*custom_1* to *custom_9* / *Benutzerdefiniertes Profil 1–9*).
+- **Automated slot allocation:** Free memory slots (Speicherplätze 0–31) are assigned automatically when creating new entries; manual slot selection is not required.
+- **Controller pre-write sync:** The card strictly pulls the current timetable from the controller first before allowing additions, modifications, or deletions to ensure controller data is always synchronized.
+- **Days:** Any combination of weekdays (Monday through Sunday) with one-click presets (*Workdays Mon–Fri*, *Weekend Sat–Sun*, *All days*).
+- **Start time:** Configurable in 24-hour time format (`HH:MM`).
+- **Operating modes:**
+  - 🔁 *Heat recovery* (`heat_recovery`, mode 1) – reversing airflow with thermal storage
+  - 💨 *Ventilation / Cross-ventilation* (`ventilation`, mode 2) – unidirectional continuous flow
+  - ⏸️ *Pause with flap closed* (`pause`, mode 3) – fans stopped, lid closed
+  - 🪟 *Pause with flap open* (`pause_open`, mode 4) – fans stopped, lid open for passive airflow
+- **Fan speed:** Levels 1 to 4 (automatically deactivated / set to 0 in pause modes).
+- **Slot overview:** Visual overview of occupied slots (e.g. 5 / 32 entries used).
+
+#### Prerequisites & Required Entities
+
+The card communicates with the e16 controller by invoking the integration's native services through a **fan entity**:
+- **Target entity:** The `fan.<zone_name>` entity created by this integration (e.g. `fan.inventer_living_room` or `fan.my_inventer`).
+- **Auto-detection:** If `entity` is omitted in the card configuration, the card automatically searches for any `inventer_e16` fan entity.
+- **Multi-zone setups:** Profiles and time schedules are stored centrally on the e16 controller. The card automatically detects all configured zones, displays which zones currently have the selected profile active, and lets you assign the profile to any zone with a single click.
+- **Behind the scenes:** The card utilizes the integration services:
+  - `inventer_e16.get_time_program` (fetches active slots from the controller)
+  - `inventer_e16.set_time_program_entry` (stores/updates slot 0–31 on the controller)
+  - `inventer_e16.delete_time_program_entry` (clears a slot from the controller)
+
+#### Card Setup Guide
+
+##### 1. Registration
+The card is automatically registered and served by the integration at:
+```
+/inventer_e16/inventer-e16-schedule-card.js
+```
+After installing the integration and restarting Home Assistant, simply refresh your browser (or pull-to-refresh in the companion app).
+
+*(Optional manual registration)*: If your setup uses dashboard YAML mode or doesn't auto-discover extra frontend URLs, go to **Settings → Dashboards → 3 dots (top right) → Resources → Add Resource**:
+- **URL:** `/inventer_e16/inventer-e16-schedule-card.js`
+- **Resource type:** `JavaScript Module`
+
+##### 2. Adding to the Dashboard
+
+**Via UI (Visual Card Editor):**
+1. Open your dashboard, click **Edit Dashboard** (top right pencil icon).
+2. Click **Add Card**.
+3. Search for **inVENTer e16 Zeitplan** (or scroll down to custom cards).
+4. Select your inVENTer Fan entity (or leave blank for automatic detection), choose a title and the default profile to open, then click **Save**.
+
+**Via YAML:**
+
+*Minimal configuration (automatic entity detection):*
+```yaml
+type: custom:inventer-e16-schedule-card
+```
+
+*Standard configuration:*
+```yaml
+type: custom:inventer-e16-schedule-card
+title: inVENTer Zeitplan Wohnzimmer
+entity: fan.inventer_living_room
+default_profile: living_room
+```
+
+*Custom profile configuration (e.g. Custom Profile 1):*
+```yaml
+type: custom:inventer-e16-schedule-card
+title: Mein Lüftungsplan
+entity: fan.inventer_living_room
+default_profile: custom_1
+```
+
+*Multi-zone dashboard example (side-by-side or stacked):*
+```yaml
+type: vertical-stack
+cards:
+  - type: custom:inventer-e16-schedule-card
+    title: Zeitplan Zone 1 (Wohnzimmer)
+    entity: fan.inventer_zone_1
+    default_profile: living_room
+
+  - type: custom:inventer-e16-schedule-card
+    title: Zeitplan Zone 2 (Schlafzimmer)
+    entity: fan.inventer_zone_2
+    default_profile: bedroom
+```
+
+#### Configuration Options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `type` | string | **required** | `custom:inventer-e16-schedule-card` |
+| `entity` | string | *auto-detect* | The `fan` entity ID of the inVENTer zone (e.g. `fan.inventer_living_room`). If omitted, automatically detects the first e16 fan. |
+| `title` | string | `inVENTer e16 – Zeitpläne` | Custom title displayed in the card header. |
+| `default_profile` | string | `living_room` | Profile selected by default when loading the card (`living_room`, `bedroom`, `childrens_room`, `bathroom`, `kitchen`, `holiday`, or `custom_1` .. `custom_9`). |
 
 ## Requirements
 

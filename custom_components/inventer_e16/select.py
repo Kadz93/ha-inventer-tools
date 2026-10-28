@@ -19,11 +19,21 @@ FAN_TO_MODE = {v: k for k, v in MODE_TO_FAN.items()}
 # Zone status mode (1 = ventilation, 2 = heat recovery, 0 = off) -> mode key
 READ_TO_MODE = {1: "ventilation", 2: "heat_recovery", 0: "pause"}
 
-# VentilationProfile values; custom profiles and winter only appear when active
-PROFILES = {0: "default", 1: "bedroom", 2: "childrens_room", 3: "bathroom", 4: "living_room",
-            5: "kitchen", 6: "holiday", 252: "summer", 253: "cellar_heat_recovery",
-            254: "cellar_ventilation"}
-HIDDEN_PROFILES = {**{7 + n: f"custom_{n + 1}" for n in range(9)}, 251: "winter"}
+# VentilationProfile values; winter only appears when active
+PROFILES = {
+    0: "default",
+    1: "bedroom",
+    2: "childrens_room",
+    3: "bathroom",
+    4: "living_room",
+    5: "kitchen",
+    6: "holiday",
+    **{7 + n: f"custom_{n + 1}" for n in range(9)},
+    252: "summer",
+    253: "cellar_heat_recovery",
+    254: "cellar_ventilation",
+}
+HIDDEN_PROFILES = {251: "winter"}
 INTERVALS = (
     ("filter_interval", client.F_FILTER_INTERVAL, (1, 2, 3, 4, 5, 6)),
     ("service_interval", client.F_SERVICE_INTERVAL, (3, 6, 9, 12)),
