@@ -111,7 +111,7 @@ The integration includes a built-in Lovelace custom card (`inventer-e16-schedule
 The card communicates with the e16 controller by invoking the integration's native services through a **fan entity**:
 - **Target entity:** The `fan.<zone_name>` entity created by this integration (e.g. `fan.inventer_living_room` or `fan.my_inventer`).
 - **Auto-detection:** If `entity` is omitted in the card configuration, the card automatically searches for any `inventer_e16` fan entity.
-- **Multi-zone setups:** If your controller runs multiple zones (e.g., Zone 1 Living Room, Zone 2 Bedroom), you can specify the target fan entity per card, or use the interactive zone dropdown in the card header to switch zones on the fly.
+- **Multi-zone setups:** Profiles and time schedules are stored centrally on the e16 controller. The card automatically detects all configured zones, displays which zones currently have the selected profile active, and lets you assign the profile to any zone with a single click.
 - **Behind the scenes:** The card utilizes the integration services:
   - `inventer_e16.get_time_program` (fetches active slots from the controller)
   - `inventer_e16.set_time_program_entry` (stores/updates slot 0–31 on the controller)
