@@ -118,6 +118,19 @@ class E16InfoCoordinator(DataUpdateCoordinator):
             raise HomeAssistantError(f"e16 setting failed: {error}") from error
         await self.async_request_refresh()
 
+    async def async_set_device_zone(self, address: int, zone_id: int):
+        LOGGER.debug("e16 set device %s to zone %s", address, zone_id)
+        try:
+            await self.hass.async_add_executor_job(self.client.set_device_zone, address, zone_id)
+        except (E16AuthError, OSError, ValueError) as error:
+            raise HomeAssistantError(f"Setting device zone failed: {error}") from error
+        if self.data and "devices" in self.data:
+            for d in self.data["devices"]:
+                if d["address"] == address:
+                    d["zone"] = zone_id
+            self.async_set_updated_data(dict(self.data))
+        self.hass.async_create_task(self.async_request_refresh())
+
 
 def create(hass, entry):
     client = E16Client(entry.data[CONF_HOST], entry.data[CONF_PSK])

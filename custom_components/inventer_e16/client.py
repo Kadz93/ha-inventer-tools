@@ -32,6 +32,7 @@ T_TIME_PROGRAM = 48
 T_FIRMWARE_STATUS = 54
 T_USER_OVERRIDE = 56
 T_GLOBAL_FIELD = 136
+T_DEVICE_FIELD = 140
 T_DEVICE_HEADER = 141
 T_DEVICE_ROW = 142
 T_ZONE_FIELD = 144
@@ -58,6 +59,9 @@ F_FILTER_RESET, F_SERVICE_RESET = 32768, 32769
 # Installer settings, read only here: fan power per speed level (u8 %) and reversal interval (u16 s)
 F_FAN_SPEED_1, F_FAN_AUTO_DIRECTION = 32, 36
 RESET_MAGIC = {F_FILTER_RESET: 0x46768482, F_SERVICE_RESET: 0x83698286}
+
+# DeviceRowField ids: address * 65536 + field
+DF_NAME, DF_ZONE = 0, 1
 
 # ZoneRowField ids: zone_id * 65536 + field; fields 2-6 are float32 LE
 ZF_NAME, ZF_PROFILE = 0, 1
@@ -387,3 +391,18 @@ class E16Client:
     def set_zone_field(self, zone_id, field, raw, zone_index=0):
         return self._update(T_ZONE_FIELD, field_payload(zone_id * 65536 + field, raw),
                             zone_index=zone_index)
+
+    def set_device_field(self, address, field, raw):
+        """Write a field in DeviceRowField (packet 140)."""
+        with self._connect() as connection, _malformed_as_value_error():
+            connection.sendall(packet(T_DEVICE_FIELD, field_payload(address * 65536 + field, raw), operation=UPDATE))
+            time.sleep(0.5)
+
+    def set_device_zone(self, address, zone_id):
+        """Assign a device (address 0..MAX_DEVICES) to a zone (1..MAX_ZONES)."""
+        if not (0 <= address < MAX_DEVICES):
+            raise ValueError(f"Invalid device address: {address}")
+        if not (1 <= zone_id <= MAX_ZONES):
+            raise ValueError(f"Invalid zone ID: {zone_id}")
+        self.set_device_field(address, DF_ZONE, bytes([zone_id]))
+

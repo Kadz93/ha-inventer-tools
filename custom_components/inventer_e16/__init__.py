@@ -11,17 +11,20 @@ from .const import CONF_DEVICE_ID, CONF_FIRMWARE_CATALOG, DOMAIN
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.FAN, Platform.BUTTON,
              Platform.NUMBER, Platform.SELECT, Platform.UPDATE]
-CARD_URL = "/inventer_e16/inventer-e16-schedule-card.js"
-CARD_PATH = Path(__file__).parent / "frontend" / "inventer-e16-schedule-card.js"
+CARDS = [
+    ("/inventer_e16/inventer-e16-schedule-card.js", Path(__file__).parent / "frontend" / "inventer-e16-schedule-card.js"),
+    ("/inventer_e16/inventer-e16-devices-card.js", Path(__file__).parent / "frontend" / "inventer-e16-devices-card.js"),
+]
 
 
 async def _async_register_frontend(hass):
-    """Register custom card with Home Assistant frontend."""
+    """Register custom cards with Home Assistant frontend."""
     if hass.data.get(DOMAIN, {}).get("frontend_registered"):
         return
     hass.data.setdefault(DOMAIN, {})["frontend_registered"] = True
 
-    if not CARD_PATH.is_file():
+    static_paths = [(url, path) for url, path in CARDS if path.is_file()]
+    if not static_paths:
         return
 
     try:
@@ -29,17 +32,20 @@ async def _async_register_frontend(hass):
             from homeassistant.components.http import StaticPathConfig
 
             await hass.http.async_register_static_paths([
-                StaticPathConfig(CARD_URL, str(CARD_PATH), cache_headers=False)
+                StaticPathConfig(url, str(path), cache_headers=False)
+                for url, path in static_paths
             ])
         elif hasattr(hass.http, "register_static_path"):
-            hass.http.register_static_path(CARD_URL, str(CARD_PATH), cache_headers=False)
+            for url, path in static_paths:
+                hass.http.register_static_path(url, str(path), cache_headers=False)
     except Exception:
         pass
 
     try:
         from homeassistant.components.frontend import add_extra_js_url
 
-        add_extra_js_url(hass, CARD_URL)
+        for url, _ in static_paths:
+            add_extra_js_url(hass, url)
     except Exception:
         pass
 
