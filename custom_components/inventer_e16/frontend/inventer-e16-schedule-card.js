@@ -957,7 +957,7 @@ class InventerE16ScheduleCard extends HTMLElement {
           zones.length > 0
             ? `
           <div class="zones-bar">
-            <span class="zones-label">Profil aktiv in:</span>
+            <span class="zones-label">Aktiv in Zone:</span>
             <div class="zones-list">
               ${zones
                 .map((z) => {
