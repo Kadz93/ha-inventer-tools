@@ -418,6 +418,17 @@ class InventerE16ScheduleCard extends HTMLElement {
     this._render();
   }
 
+  /** Read the current time-input value back into _editingEntry before any re-render. */
+  _syncEditTime() {
+    if (!this._editingEntry) return;
+    const root = this.shadowRoot;
+    if (!root) return;
+    const timeInput = root.getElementById("edit-time");
+    if (timeInput && timeInput.value) {
+      this._editingEntry.time = timeInput.value;
+    }
+  }
+
   _render() {
     const root = this.shadowRoot;
     if (!root) return;
@@ -1279,6 +1290,7 @@ class InventerE16ScheduleCard extends HTMLElement {
           } else {
             this._editingEntry.days.push(day);
           }
+          this._syncEditTime();
           this._render();
         });
       });
@@ -1287,6 +1299,7 @@ class InventerE16ScheduleCard extends HTMLElement {
       const qWork = root.getElementById("btn-quick-workdays");
       if (qWork) {
         qWork.addEventListener("click", () => {
+          this._syncEditTime();
           this._editingEntry.days = ["monday", "tuesday", "wednesday", "thursday", "friday"];
           this._render();
         });
@@ -1294,6 +1307,7 @@ class InventerE16ScheduleCard extends HTMLElement {
       const qEnd = root.getElementById("btn-quick-weekend");
       if (qEnd) {
         qEnd.addEventListener("click", () => {
+          this._syncEditTime();
           this._editingEntry.days = ["saturday", "sunday"];
           this._render();
         });
@@ -1301,6 +1315,7 @@ class InventerE16ScheduleCard extends HTMLElement {
       const qAll = root.getElementById("btn-quick-all");
       if (qAll) {
         qAll.addEventListener("click", () => {
+          this._syncEditTime();
           this._editingEntry.days = WEEKDAYS.map((w) => w.id);
           this._render();
         });
@@ -1309,6 +1324,7 @@ class InventerE16ScheduleCard extends HTMLElement {
       // Mode option buttons
       root.querySelectorAll(".mode-option-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
+          this._syncEditTime();
           const mode = btn.getAttribute("data-mode");
           this._editingEntry.mode = mode;
           if (mode === "pause" || mode === "pause_open") {
@@ -1323,6 +1339,7 @@ class InventerE16ScheduleCard extends HTMLElement {
       // Speed buttons
       root.querySelectorAll(".speed-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
+          this._syncEditTime();
           this._editingEntry.speed = parseInt(btn.getAttribute("data-speed"), 10);
           this._render();
         });
