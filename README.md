@@ -7,12 +7,13 @@ Testing environment is a multi zone setup with iv14zero and twin+ vents.
 I am an experienced hardware technician and software dev but use 100% AI to code this in my spare time. (as well as the main repo i guess, no disclaimer but lots of agent mds etc)
 I test everything on my own setup before releasing it into my main, bugs will appear :)
 
-Additional features on this branch (`time-schedule-card`):
+Additional features in this fork:
 - **Multi-zone support:** Manage multi-zone setups, zone fans, statuses, and assign profiles per zone.
 - **Support for all fan modes:** Full control over `heat_recovery`, `ventilation`, and both pause flap modes (`pause` flap closed, `pause_open` flap open).
 - **Lovelace Custom Card (`inventer-e16-schedule-card`):** View, add, edit, and delete time schedule points across all standard and custom ventilation profiles (1–15).
 - **Automated slot allocation:** During profile creation, free memory slots (Speicherplätze 0–31) are assigned automatically without requiring manual slot selection.
 - **Controller pre-write sync:** The integration / card always pulls the schedule from the physical controller first before executing any write or delete operation.
+- **Lovelace Custom Card (`inventer-e16-devices-card`):** View all detected wireless devices (fans, sensors, controller) with live telemetry, filter by type or zone, and reassign devices to zones with a single click via the `get_devices` and `set_device_zone` services.
 
 > [!WARNING]
 > **Wichtiger Warnhinweis zu Zeitplänen (Time Tables) / Important Warning:**
