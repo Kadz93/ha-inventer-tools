@@ -2,6 +2,7 @@
 # Copyright (c) 2026 Tobias Krautkremer
 # Copyright (c) 2026 Markus Hennig
 """inVENTer Easy Connect e16 - local control over Wi-Fi (TLS-PSK)."""
+import json
 import logging
 from pathlib import Path
 
@@ -21,6 +22,20 @@ CARDS = [
     ("/inventer_e16/inventer-e16-devices-card.js", Path(__file__).parent / "frontend" / "inventer-e16-devices-card.js"),
 ]
 
+_MANIFEST_VERSION: str | None = None
+
+
+def _get_version() -> str:
+    """Return the integration version from manifest.json (cached after first read)."""
+    global _MANIFEST_VERSION  # noqa: PLW0603
+    if _MANIFEST_VERSION is None:
+        try:
+            manifest = json.loads((Path(__file__).parent / "manifest.json").read_text(encoding="utf-8"))
+            _MANIFEST_VERSION = manifest.get("version", "0")
+        except Exception:  # noqa: BLE001
+            _MANIFEST_VERSION = "0"
+    return _MANIFEST_VERSION
+
 
 async def _async_register_frontend(hass):
     """Register custom cards as Lovelace resources so the mobile app loads them synchronously."""
@@ -32,22 +47,20 @@ async def _async_register_frontend(hass):
     if not static_paths:
         return
 
-    # 1. Serve the JS files via HTTP
+    version = _get_version()
+
+    # 1. Serve the JS files via HTTP (URL without query string so the route matches).
+    from homeassistant.components.http import StaticPathConfig
+
     try:
-        if hasattr(hass.http, "async_register_static_paths"):
-            from homeassistant.components.http import StaticPathConfig
+        await hass.http.async_register_static_paths([
+            StaticPathConfig(url, str(path), cache_headers=False)
+            for url, path in static_paths
+        ])
+    except Exception as err:
+        LOGGER.warning("Could not register HTTP static paths for custom cards: %s", err)
 
-            await hass.http.async_register_static_paths([
-                StaticPathConfig(url, str(path), cache_headers=False)
-                for url, path in static_paths
-            ])
-        elif hasattr(hass.http, "register_static_path"):
-            for url, path in static_paths:
-                hass.http.register_static_path(url, str(path), cache_headers=False)
-    except Exception:
-        pass
-
-    # 2. Register as Lovelace resources (synchronous load – works in the mobile app).
+    # 2. Register as Lovelace resources with a version query string for cache busting.
     #    Falls back to add_extra_js_url for YAML-mode dashboards.
     registered_as_resource = False
     try:
@@ -59,10 +72,19 @@ async def _async_register_frontend(hass):
             if isinstance(resources, ResourceStorageCollection):
                 if not resources.loaded:
                     await resources.async_load()
-                existing = {item["url"].split("?")[0] for item in resources.async_items()}
+                existing = {
+                    item["url"].split("?")[0]: item
+                    for item in resources.async_items()
+                }
                 for url, _ in static_paths:
+                    versioned_url = f"{url}?v={version}"
                     if url not in existing:
-                        await resources.async_create_item({"res_type": "module", "url": url})
+                        await resources.async_create_item({"res_type": "module", "url": versioned_url})
+                    elif existing[url].get("url") != versioned_url:
+                        await resources.async_update_item(
+                            existing[url]["id"],
+                            {"res_type": "module", "url": versioned_url},
+                        )
                 registered_as_resource = True
     except Exception as err:
         LOGGER.debug("Could not register Lovelace resources, falling back to extra_js_url: %s", err)
@@ -72,9 +94,9 @@ async def _async_register_frontend(hass):
             from homeassistant.components.frontend import add_extra_js_url
 
             for url, _ in static_paths:
-                add_extra_js_url(hass, url)
-        except Exception:
-            pass
+                add_extra_js_url(hass, f"{url}?v={version}")
+        except Exception as err:
+            LOGGER.warning("Could not register custom cards via add_extra_js_url: %s", err)
 
 
 async def async_migrate_entry(hass, entry):

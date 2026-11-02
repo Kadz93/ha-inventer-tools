@@ -5,6 +5,10 @@
     "@Kadz93"
   ],
   "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http"
+  ],
   "dhcp": [
     {
       "hostname": "easy connect e16-*"
