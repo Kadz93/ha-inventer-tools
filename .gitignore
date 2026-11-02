@@ -17,3 +17,5 @@ Thumbs.db
 *.secret.json
 e16*.json
 credentials*.json
+
+.permissions.json

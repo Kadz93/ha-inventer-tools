@@ -873,7 +873,7 @@ window.customCards.push({
   name: "inVENTer e16 Geräte & Zonen",
   description: "Erkannte Lüfter, Sensoren und Regler anzeigen und Zonen zuordnen",
   preview: true,
-  documentationURL: "https://github.com/tobiask1977/ha-inventer-e16"
+  documentationURL: "https://github.com/Kadz93/ha-inventer-tools"
 });
 
 console.info(
