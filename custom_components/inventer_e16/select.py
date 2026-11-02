@@ -55,9 +55,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class E16Mode(E16Entity, SelectEntity):
     """Operating mode of the zone (heat recovery, ventilation, closed/open flap)."""
 
-    def __init__(self, coordinator, entry, key, zone_id=None):
-        super().__init__(coordinator, entry, key, zone_id=zone_id)
-
     @property
     def options(self):
         return list(MODE_TO_FAN)
@@ -88,9 +85,6 @@ class E16Mode(E16Entity, SelectEntity):
 
 class E16Profile(E16Entity, SelectEntity):
     """Permanent profile of the zone (ZoneRowField 1), like the profile choice in the app."""
-
-    def __init__(self, coordinator, entry, key, zone_id=None):
-        super().__init__(coordinator, entry, key, zone_id=zone_id)
 
     def _current(self):
         value = self.coordinator.data["profile"]

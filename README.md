@@ -65,6 +65,13 @@ data:
 Speed and mode are **time-limited commands** exactly like in the app: when the command duration
 ends, the controller returns to its profile. Permanent changes are made through the profile.
 
+### Multi-zone behaviour
+
+For controllers managing multiple ventilation zones (up to 4 zones):
+- **Zone devices:** Zone 1 remains attached to the main controller device. Zones 2–4 get their own dedicated zone devices in Home Assistant (e.g. `inVENTer Zone 2`).
+- **Zone-scoped buttons:** The *Boost 15 min*, *Pause 1 h*, and *Resume profile* buttons are scoped per zone. Pressing *Boost* sends command 5 (speed 4, ventilation) targeted strictly to that specific zone for 15 minutes. Pressing *Pause 1 h* sends command 5 (speed 0, flap closed) targeted to that zone for 1 hour. Pressing *Resume profile* sends command 7 (cancel) for that zone.
+- **Global commands (1 & 2):** Single-zone installations continue to use the global commands (commands 1 and 2). In multi-zone setups, global boost and pause buttons are not exposed separately to prevent unintended cross-zone overrides; each zone is operated independently via its own entities. Automations wishing to affect all zones can trigger the respective zone buttons or services.
+
 **`inventer_e16.get_time_program`** returns the time program of a ventilation profile (default: the
 current one; the automatic and cellar profiles have none) – read only for now:
 

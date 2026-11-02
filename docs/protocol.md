@@ -136,7 +136,7 @@ Record (8 bytes, inside a Raw wrapper → payload `BA 0A 00 08` + record):
 |---|---:|---|
 | Global boost | 1 | speed 4, mode 2, zone 255, 900 s |
 | Global pause | 2 | power button "off": duration `0xFFFFFFFF` |
-| Zone speed/mode | 5 | speed 1–4, mode 1/2, one zone, 900–28 800 s |
+| Zone speed/mode | 5 | speed 0–4, mode 1–4, one zone, 900–28 800 s (or `0xFFFFFFFF`) |
 | Cancel | 7 | power button "on": back to the profile |
 | (zone boost 3, zone pause 4, zone profile 6, fans off 8/9) | | defined, not used by the app |
 
@@ -147,8 +147,19 @@ Record (8 bytes, inside a Raw wrapper → payload `BA 0A 00 08` + record):
 | Pause, flap closed | 3 |
 | Pause, flap open | 4 |
 
-Verified: zone 1, speed 2, mode 2, 900 s → status speed 2, playback 5, timer counting down,
-mode reported as 1 (= ventilation in the status table). Cancel restored the profile.
+Verified on controller firmware 5.30.10 and 5.30.11:
+- **Speed & mode:** zone 1, speed 2, mode 2, 900 s → status speed 2, playback 5, timer counting down,
+  mode reported as 1 (= ventilation in the status table). Cancel restored the profile.
+- **Pause & flap positions (mode 3 & 4):** tested via command 5 (speed 0, mode 3/4) on a multi-zone
+  installation with iV14-Zero and Twin+ fans. The fans react immediately:
+  - Mode 3 (pause, flap closed): fans turn off (speed 0) and the flap / inner cover closes.
+  - Mode 4 (pause, flap open): fans turn off (speed 0) and the flap stays open for passive airflow.
+- **Multi-zone controls:**
+  - Turning off a zone sends command 5 with speed 0, mode 3 (closed flap), zone ID, and duration `0xFFFFFFFF`.
+  - "Boost" on a zone sends command 5 with speed 4, mode 2 (ventilation), zone ID, and 900 s.
+  - "Pause 1 h" on a zone sends command 5 with speed 0, mode 3 (closed flap), zone ID, and 3600 s.
+  - `select.mode` sends command 5 with the chosen mode (1–4) and the zone's configured command duration
+    (with speed 0 for pause modes 3/4; speed >= 1 for modes 1/2).
 
 Note: Cancel also makes an automatic profile re-evaluate immediately, so the state after
 "cancel" can differ from the state before the command.

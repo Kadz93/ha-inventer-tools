@@ -85,7 +85,7 @@ BATTERY_DEVICE_TYPES = {4, 5, 12}
 # A controller has a handful of radio devices; cap what a (faulty) reply can make us query
 MAX_DEVICES = 32
 # Maximum number of zones to probe; real installations have 1-4
-MAX_ZONES = 8
+MAX_ZONES = 4
 # Hardware types as used by the vendor firmware catalog; device rows use 1-3,
 # the ESP32 Wi-Fi module comes from packet 54
 HW_MZCU, HW_FCU, HW_SENSORS, HW_ESP32 = 1, 2, 3, 6

@@ -144,6 +144,7 @@ async def test_recorded_discovery_key_does_not_reload(hass):
     zone_mock = MagicMock()
     zone_mock.async_config_entry_first_refresh = AsyncMock()
     zone_mock.client.get_zone.side_effect = ValueError("no more zones")
+    data.info.client.get_zones.return_value = [{"zone_id": 1, "name": "Zone 1"}]
     data.zones = [zone_mock]
     data.info.async_config_entry_first_refresh = AsyncMock()
     with patch("custom_components.inventer_e16.coordinator.create", return_value=data) as create, \

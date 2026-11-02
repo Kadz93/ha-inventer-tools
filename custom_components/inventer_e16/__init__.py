@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 
 from homeassistant.const import Platform
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 
 from . import coordinator
@@ -88,31 +89,77 @@ async def async_migrate_entry(hass, entry):
 
 async def async_setup_entry(hass, entry):
     data = coordinator.create(hass, entry)
-    await data.zones[0].async_config_entry_first_refresh()
-    # Discover additional zones (indices 1..7)
-    client = data.zones[0].client
-    for index in range(1, 8):
-        try:
-            zone_data = await hass.async_add_executor_job(client.get_zone, index)
-        except (OSError, ValueError):
-            break
-        if not zone_data.get("zone_id") or zone_data["zone_id"] in [z.data["zone_id"] for z in data.zones if z.data]:
-            break
+    await data.info.async_config_entry_first_refresh()
+
+    dev_reg = dr.async_get(hass)
+    device_id = entry.data[CONF_DEVICE_ID]
+    zone_prefix = f"{device_id}_z"
+    known_registered_zones = {
+        int(ident[len(zone_prefix):])
+        for dev in dr.async_entries_for_config_entry(dev_reg, entry.entry_id)
+        for domain, ident in dev.identifiers
+        if domain == DOMAIN and ident.startswith(zone_prefix) and ident[len(zone_prefix):].isdigit()
+    }
+
+    assigned_zones = {
+        d["zone"] for d in (data.info.data.get("devices") or [])
+        if d.get("zone") and d["zone"] > 0
+    }
+
+    client = data.info.client
+    try:
+        raw_zones = await hass.async_add_executor_job(client.get_zones)
+    except coordinator.E16AuthError as error:
+        raise ConfigEntryAuthFailed("The controller rejected the PSK") from error
+    except (OSError, ValueError) as error:
+        raise ConfigEntryNotReady(f"Reading e16 zones failed: {error}") from error
+
+    if not isinstance(raw_zones, list):
+        if isinstance(raw_zones, dict):
+            raw_zones = [raw_zones]
+        else:
+            raw_zones = [{"zone_id": 1, "name": "Zone 1"}]
+
+    data.zones = []
+    seen_zone_ids = set()
+    for index, zone_data in enumerate(raw_zones):
+        if not zone_data or not isinstance(zone_data, dict):
+            continue
+        zid = zone_data.get("zone_id")
+        if not zid or zid in seen_zone_ids:
+            continue
+        seen_zone_ids.add(zid)
+        if index == 0 or zid == 1:
+            is_active = True
+        else:
+            is_active = (
+                zid in assigned_zones
+                or bool(zone_data.get("name") and zone_data["name"].strip())
+                or zid in known_registered_zones
+            )
+        if not is_active:
+            continue
         zone_coord = coordinator.E16ZoneCoordinator(hass, entry, client, index)
         zone_coord.async_set_updated_data(zone_data)
         data.zones.append(zone_coord)
-    await data.info.async_config_entry_first_refresh()
+
+    missing_zones = known_registered_zones - seen_zone_ids
+    if missing_zones:
+        raise ConfigEntryNotReady(f"Expected zone(s) {missing_zones} missing from e16 controller")
+
+    if not data.zones:
+        raise ConfigEntryNotReady("No active zones found on e16 controller")
+
     # Create the main device first: fans and sensors reference it via via_device_id
-    data.main_device_id = dr.async_get(hass).async_get_or_create(
-        config_entry_id=entry.entry_id, identifiers={(DOMAIN, entry.data[CONF_DEVICE_ID])},
+    data.main_device_id = dev_reg.async_get_or_create(
+        config_entry_id=entry.entry_id, identifiers={(DOMAIN, device_id)},
         name=entry.title, manufacturer="inVENTer", model="Easy Connect e16",
     ).id
     # Create zone devices for multi-zone setups (zone 2+)
     if len(data.zones) > 1:
-        device_id = entry.data[CONF_DEVICE_ID]
         for zone_coord in data.zones[1:]:
             zone_data = zone_coord.data
-            dr.async_get(hass).async_get_or_create(
+            dev_reg.async_get_or_create(
                 config_entry_id=entry.entry_id,
                 identifiers={(DOMAIN, f"{device_id}_z{zone_data['zone_id']}")},
                 name=f"inVENTer {zone_data['name']}" if zone_data.get("name") else f"inVENTer Zone {zone_data['zone_id']}",
