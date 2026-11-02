@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Markus Hennig
 /**
  * inVENTer Easy Connect e16 - Lovelace Schedule Custom Card
  * 
@@ -1498,7 +1500,7 @@ window.customCards.push({
   name: "inVENTer e16 Zeitplan",
   description: "Zeitprofile bearbeiten (Wohnzimmer, Schlafzimmer, Benutzerdefinierte Profile 1-9 etc.)",
   preview: true,
-  documentationURL: "https://github.com/tobiask1977/ha-inventer-e16"
+  documentationURL: "https://github.com/Kadz93/ha-inventer-tools"
 });
 
 console.info(

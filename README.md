@@ -16,7 +16,7 @@ Additional features in this fork:
 - **Lovelace Custom Card (`inventer-e16-devices-card`):** View all detected wireless devices (fans, sensors, controller) with live telemetry, filter by type or zone, and reassign devices to zones with a single click via the `get_devices` and `set_device_zone` services.
 
 > [!WARNING]
-> **Wichtiger Warnhinweis zu Zeitplänen (Time Tables) / Important Warning:**
+> ** Important Warning:**
 > Managing time schedules directly modifies the internal timetable memory of your inVENTer e16 controller. While the integration ensures that timetable data is always pulled from the controller first before anything is written and verifies every write back, **if you notice any issues, inconsistencies, or unexpected controller behavior with the timetables, immediately deactivate/disable this integration in Home Assistant** (*Settings → Devices & Services → inVENTer e16 → 3 dots → Disable*). Deactivating halts all communication so that the controller can run undisturbed and can be checked or restored via the official inVENTer app.
 
 # inVENTer Easy Connect e16 for Home Assistant
@@ -266,12 +266,21 @@ ventilation.
 
 ### 2. Install the integration
 
-**HACS:** search for *inVENTer Easy Connect e16* in HACS, download it and restart Home Assistant.
-Or open it directly:
+#### Via HACS (Custom Repository)
 
-[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tobiask1977&repository=ha-inventer-e16&category=integration)
+1. Open Home Assistant and navigate to **HACS** → **Integrations**.
+2. Click the three dots (⋮) in the top right corner and select **Custom repositories**.
+3. Add the repository:
+   - **Repository:** `https://github.com/Kadz93/ha-inventer-tools`
+   - **Type:** `Integration`
+4. Click **Add**, then search for **ha-inventer-tools** in HACS, click **Download**, and restart Home Assistant.
 
-**Manual:** copy `custom_components/inventer_e16` to `/config/custom_components/` and restart.
+Or click here to open directly in HACS:
+
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Kadz93&repository=ha-inventer-tools&category=integration)
+
+#### Manual Installation
+Copy `custom_components/inventer_e16` to `/config/custom_components/` and restart Home Assistant.
 
 ### 3. Add it
 
@@ -325,7 +334,10 @@ dependency and can be used on its own.
 
 ## License
 
-Copyright (c) 2026 Tobias Krautkremer. Released under the [MIT License](LICENSE): you may use,
+Copyright (c) 2026 Tobias Krautkremer
+Copyright (c) 2026 Markus Hennig
+
+Released under the [MIT License](LICENSE): you may use,
 copy, modify and distribute this software, including commercially, as long as the copyright
 notice and the license text are kept. Source files carry the identifier
 `SPDX-License-Identifier: MIT`.

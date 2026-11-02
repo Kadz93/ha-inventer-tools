@@ -1,8 +1,8 @@
 {
   "domain": "inventer_e16",
-  "name": "inVENTer Easy Connect e16",
+  "name": "ha-inventer-tools",
   "codeowners": [
-    "@tobiask1977"
+    "@Kadz93"
   ],
   "config_flow": true,
   "dhcp": [
@@ -13,10 +13,10 @@
       "hostname": "noname-?????-?????"
     }
   ],
-  "documentation": "https://github.com/tobiask1977/ha-inventer-e16",
+  "documentation": "https://github.com/Kadz93/ha-inventer-tools",
   "integration_type": "device",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/tobiask1977/ha-inventer-e16/issues",
+  "issue_tracker": "https://github.com/Kadz93/ha-inventer-tools/issues",
   "requirements": [],
   "version": "0.3.15"
 }

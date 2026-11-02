@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Tobias Krautkremer
+# Copyright (c) 2026 Markus Hennig
 """Quick commands as on the app home screen, and resetting the maintenance timers."""
 import struct
 

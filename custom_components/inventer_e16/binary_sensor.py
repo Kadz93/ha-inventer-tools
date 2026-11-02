@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Tobias Krautkremer
+# Copyright (c) 2026 Markus Hennig
 """Status flag, filter/service due and missing radio devices from the status bits."""
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.const import EntityCategory

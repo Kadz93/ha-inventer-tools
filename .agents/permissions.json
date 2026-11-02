@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "command(*)",
+      "read_file(*)",
+      "write_file(*)"
+    ]
+  },
+  "autoExecutionPolicy": "always-proceed",
+  "toolExecutionPolicy": "always-proceed"
+}
+

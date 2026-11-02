@@ -10,6 +10,6 @@ tolerated.
 
 Report unacceptable behaviour to the maintainer through a
 [private report on GitHub](../../security/advisories/new) or by contacting
-[@tobiask1977](https://github.com/tobiask1977). Reports are handled confidentially.
+[@Kadz93](https://github.com/Kadz93). Reports are handled confidentially.
 Maintainers may remove comments, commits or issues that violate this code and may block
 participants who repeatedly do so.
