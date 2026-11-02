@@ -30,7 +30,9 @@ const ICONS = {
   battery: `<svg viewBox="0 0 24 24" class="badge-icon"><path fill="currentColor" d="M16 20H8V6h8m0-2h-1V3a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v1H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"/></svg>`,
   refresh: `<svg viewBox="0 0 24 24" class="action-icon"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>`,
   zone: `<svg viewBox="0 0 24 24" class="zone-icon"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>`,
-  checkmark: `<svg viewBox="0 0 24 24" class="status-icon"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`
+  checkmark: `<svg viewBox="0 0 24 24" class="status-icon"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`,
+  clock: `<svg viewBox="0 0 24 24" class="badge-icon"><path fill="currentColor" d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm0-18a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm.5 5v5.25l4.5 2.67-.75 1.23-5.25-3.15V7h1.5z"/></svg>`,
+  close: `<svg viewBox="0 0 24 24" class="action-icon"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>`
 };
 
 const STRINGS = {
@@ -70,6 +72,39 @@ const STRINGS = {
     en: (addr, zone) => `Device #${addr} successfully assigned to zone ${zone}!`
   },
   err_assign: { de: "Fehler beim Zuweisen: ", en: "Error assigning: " },
+  dynamic_btn_title: { de: "Dynamische Zone (Zeitsteuerung) konfigurieren", en: "Configure dynamic zone (time schedule)" },
+  dynamic_badge: {
+    de: (zoneLabel, s, e) => `Dynamisch: ${zoneLabel} (${s}–${e})`,
+    en: (zoneLabel, s, e) => `Dynamic: ${zoneLabel} (${s}–${e})`
+  },
+  dynamic_badge_active: {
+    de: (zoneLabel, s, e) => `⚡ Aktiv in ${zoneLabel} (${s}–${e})`,
+    en: (zoneLabel, s, e) => `⚡ Active in ${zoneLabel} (${s}–${e})`
+  },
+  dynamic_btn_add: { de: "+ Dynamisch", en: "+ Dynamic" },
+  dynamic_modal_title: {
+    de: (name) => `Dynamische Zone: ${name}`,
+    en: (name) => `Dynamic zone: ${name}`
+  },
+  dynamic_modal_desc: {
+    de: "Wechselt das Gerät zeitgesteuert vorübergehend in eine andere Zone (z. B. nachts zum Lüften) und kehrt danach automatisch in die Standard-Zone zurück.",
+    en: "Temporarily switches this device to another zone based on a time schedule, then automatically returns to its standard zone."
+  },
+  dynamic_enabled: { de: "Dynamische Umschaltung aktiv", en: "Dynamic switching enabled" },
+  dynamic_target_zone_label: { de: "Ziel-Zone (während Zeitfenster):", en: "Target zone (during time window):" },
+  dynamic_start_time_label: { de: "Startzeit:", en: "Start time:" },
+  dynamic_end_time_label: { de: "Endzeit (Rückkehr):", en: "End time (return):" },
+  dynamic_weekdays_label: { de: "Gültige Wochentage:", en: "Active weekdays:" },
+  quick_workdays: { de: "Mo–Fr", en: "Mon–Fri" },
+  quick_weekend: { de: "Sa–So", en: "Sat–Sun" },
+  quick_all: { de: "Alle Tage", en: "All days" },
+  btn_save: { de: "Speichern", en: "Save" },
+  btn_cancel: { de: "Abbrechen", en: "Cancel" },
+  btn_delete_rule: { de: "Zeitplan löschen", en: "Delete schedule" },
+  status_dynamic_saving: { de: "Speichere dynamische Zone...", en: "Saving dynamic zone schedule..." },
+  status_dynamic_saved: { de: "Dynamische Zone erfolgreich gespeichert!", en: "Dynamic zone saved successfully!" },
+  status_dynamic_deleted: { de: "Dynamische Zone gelöscht.", en: "Dynamic zone schedule deleted." },
+  err_dynamic_save: { de: "Fehler beim Speichern der dynamischen Zone: ", en: "Error saving dynamic zone: " },
   editor_title: { de: "Kartentitel", en: "Card title" },
   editor_entity: { de: "Lüfter-Entität (optional, sonst Auto-Erkennung)", en: "Fan entity (optional, auto-detected if blank)" },
 };
@@ -93,6 +128,8 @@ class InventerE16DevicesCard extends HTMLElement {
     this._statusMessage = "";
     this._initialFetchDone = false;
     this._hasPulled = false;
+    this._editingDynamicAddress = null;
+    this._dynamicForm = null;
   }
 
   _t(key, ...args) {
@@ -296,6 +333,122 @@ class InventerE16DevicesCard extends HTMLElement {
       }
     } finally {
       this._assigningAddress = null;
+      this._render();
+    }
+  }
+
+  _openDynamicDialog(address) {
+    const dev = this._devices.find((d) => d.address === address);
+    if (!dev) return;
+    const existing = dev.dynamic_zone;
+    const otherZone = this._zones.find((z) => z.zone_id !== dev.zone);
+    const fallbackTarget = otherZone ? otherZone.zone_id : (dev.zone === 1 ? 2 : 1);
+
+    this._dynamicForm = {
+      address: address,
+      enabled: existing ? existing.enabled !== false : true,
+      target_zone: existing ? existing.target_zone : fallbackTarget,
+      original_zone: existing ? existing.original_zone : dev.zone,
+      start_time: existing ? existing.start_time : "22:00",
+      end_time: existing ? existing.end_time : "07:00",
+      weekdays: existing && Array.isArray(existing.weekdays) ? [...existing.weekdays] : [0, 1, 2, 3, 4, 5, 6],
+      hasExisting: Boolean(existing)
+    };
+    this._editingDynamicAddress = address;
+    this._errorMessage = "";
+    this._render();
+  }
+
+  _closeDynamicDialog() {
+    this._editingDynamicAddress = null;
+    this._dynamicForm = null;
+    this._render();
+  }
+
+  async _saveDynamicZone() {
+    if (!this._dynamicForm || !this._hass) return;
+    const entityId = this._getTargetEntity();
+    if (!entityId) return;
+
+    const form = this._dynamicForm;
+    this._loading = true;
+    this._statusMessage = this._t("status_dynamic_saving");
+    this._render();
+
+    try {
+      await this._hass.callService(
+        "inventer_e16",
+        "set_dynamic_device_zone",
+        {
+          address: parseInt(form.address, 10),
+          target_zone: parseInt(form.target_zone, 10),
+          start_time: form.start_time,
+          end_time: form.end_time,
+          enabled: Boolean(form.enabled),
+          weekdays: form.weekdays
+        },
+        { entity_id: entityId }
+      );
+
+      const successMsg = this._t("status_dynamic_saved");
+      this._statusMessage = successMsg;
+      setTimeout(() => {
+        if (this._statusMessage === successMsg) {
+          this._statusMessage = "";
+          this._render();
+        }
+      }, 3500);
+
+      this._editingDynamicAddress = null;
+      this._dynamicForm = null;
+      await this._fetchDevices(true);
+    } catch (err) {
+      console.error("Error saving dynamic zone:", err);
+      this._errorMessage = this._t("err_dynamic_save") + (err.message || err);
+      this._render();
+    } finally {
+      this._loading = false;
+      this._render();
+    }
+  }
+
+  async _deleteDynamicZone() {
+    if (!this._dynamicForm || !this._hass) return;
+    const entityId = this._getTargetEntity();
+    if (!entityId) return;
+
+    const addr = this._dynamicForm.address;
+    this._loading = true;
+    this._render();
+
+    try {
+      await this._hass.callService(
+        "inventer_e16",
+        "delete_dynamic_device_zone",
+        {
+          address: parseInt(addr, 10)
+        },
+        { entity_id: entityId }
+      );
+
+      const successMsg = this._t("status_dynamic_deleted");
+      this._statusMessage = successMsg;
+      setTimeout(() => {
+        if (this._statusMessage === successMsg) {
+          this._statusMessage = "";
+          this._render();
+        }
+      }, 3500);
+
+      this._editingDynamicAddress = null;
+      this._dynamicForm = null;
+      await this._fetchDevices(true);
+    } catch (err) {
+      console.error("Error deleting dynamic zone:", err);
+      this._errorMessage = this._t("err_dynamic_save") + (err.message || err);
+      this._render();
+    } finally {
+      this._loading = false;
       this._render();
     }
   }
@@ -645,6 +798,196 @@ class InventerE16DevicesCard extends HTMLElement {
           font-weight: 600;
         }
 
+        /* Dynamic Zone Row & Button */
+        .dynamic-zone-row {
+          display: flex;
+          align-items: center;
+          margin-top: 6px;
+        }
+        .dynamic-schedule-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 3px 8px;
+          border-radius: 6px;
+          font-size: 0.73rem;
+          font-weight: 500;
+          border: 1px dashed var(--divider-color, #ccc);
+          background-color: transparent;
+          color: var(--secondary-text-color, #616161);
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        .dynamic-schedule-btn:hover {
+          border-color: var(--primary-color, #03a9f4);
+          color: var(--primary-color, #03a9f4);
+          background-color: rgba(3, 169, 244, 0.05);
+        }
+        .dynamic-schedule-btn.configured {
+          border-style: solid;
+          border-color: rgba(3, 169, 244, 0.5);
+          background-color: rgba(3, 169, 244, 0.08);
+          color: var(--primary-color, #0288d1);
+          font-weight: 600;
+        }
+        .dynamic-schedule-btn.active {
+          border-style: solid;
+          border-color: #ff9800;
+          background-color: rgba(255, 152, 0, 0.12);
+          color: #e65100;
+          font-weight: 600;
+        }
+        .dynamic-schedule-btn .badge-icon {
+          width: 14px;
+          height: 14px;
+        }
+
+        /* Modal Dialog */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.55);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 16px;
+          box-sizing: border-box;
+        }
+        .modal-card {
+          background-color: var(--ha-card-background, var(--card-background-color, #fff));
+          color: var(--primary-text-color, #212121);
+          border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+          width: 100%;
+          max-width: 440px;
+          box-sizing: border-box;
+          padding: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 1px solid var(--divider-color, #e0e0e0);
+          padding-bottom: 8px;
+        }
+        .modal-title {
+          font-size: 1.05rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .modal-desc {
+          font-size: 0.82rem;
+          color: var(--secondary-text-color, #757575);
+          line-height: 1.35;
+        }
+        .modal-row {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .modal-row.horizontal {
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .modal-label {
+          font-size: 0.83rem;
+          font-weight: 600;
+          color: var(--primary-text-color, #333);
+        }
+        .modal-input, .modal-select {
+          padding: 7px 10px;
+          border-radius: 6px;
+          border: 1px solid var(--divider-color, #ccc);
+          background: var(--card-background-color, #fff);
+          color: var(--primary-text-color, #212121);
+          font-size: 0.9rem;
+          font-family: inherit;
+        }
+        .modal-time-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        .days-chips-row {
+          display: flex;
+          gap: 4px;
+          flex-wrap: wrap;
+        }
+        .day-chip {
+          padding: 4px 8px;
+          border-radius: 6px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          border: 1px solid var(--divider-color, #ccc);
+          background: var(--card-background-color, #f5f5f5);
+          color: var(--secondary-text-color, #616161);
+          transition: all 0.15s;
+        }
+        .day-chip.active {
+          background: var(--primary-color, #03a9f4);
+          color: #fff;
+          border-color: var(--primary-color, #03a9f4);
+        }
+        .quick-days-row {
+          display: flex;
+          gap: 6px;
+          margin-top: 2px;
+        }
+        .quick-btn {
+          font-size: 0.72rem;
+          padding: 2px 6px;
+          border-radius: 4px;
+          background: transparent;
+          border: 1px dashed var(--divider-color, #bbb);
+          color: var(--secondary-text-color, #757575);
+          cursor: pointer;
+        }
+        .modal-actions {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-top: 6px;
+          padding-top: 10px;
+          border-top: 1px solid var(--divider-color, #e0e0e0);
+        }
+        .btn-primary {
+          background-color: var(--primary-color, #03a9f4);
+          color: #fff;
+          border: none;
+          border-radius: 6px;
+          padding: 8px 14px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .btn-secondary {
+          background: transparent;
+          border: 1px solid var(--divider-color, #ccc);
+          color: var(--primary-text-color, #333);
+          border-radius: 6px;
+          padding: 8px 12px;
+          cursor: pointer;
+        }
+        .btn-danger {
+          background: transparent;
+          border: 1px solid #f44336;
+          color: #f44336;
+          border-radius: 6px;
+          padding: 8px 12px;
+          cursor: pointer;
+        }
+
         .empty-state {
           padding: 32px 16px;
           text-align: center;
@@ -731,6 +1074,13 @@ class InventerE16DevicesCard extends HTMLElement {
               const devIcon = isFan ? ICONS.fan : (isSensor ? ICONS.sensor : ICONS.controller);
               const isSaving = this._assigningAddress === dev.address;
 
+              let dynamicTargetLabel = "";
+              if (dev.dynamic_zone && dev.dynamic_zone.target_zone) {
+                const targetZoneObj = this._zones.find((z) => z.zone_id === dev.dynamic_zone.target_zone);
+                const rawName = targetZoneObj ? (targetZoneObj.name || `Zone ${targetZoneObj.zone_id}`) : `Zone ${dev.dynamic_zone.target_zone}`;
+                dynamicTargetLabel = rawName.toLowerCase().startsWith("zone") ? rawName : `Zone ${rawName}`;
+              }
+
               return `
                 <div class="device-card ${isSaving ? "saving" : ""}">
                   <div class="device-top">
@@ -801,6 +1151,24 @@ class InventerE16DevicesCard extends HTMLElement {
                         `;
                       }).join("")}
                     </div>
+                    ${!isController ? `
+                      <div class="dynamic-zone-row">
+                        <button
+                          class="dynamic-schedule-btn ${dev.dynamic_zone && dev.dynamic_zone.enabled ? (dev.dynamic_zone.active ? "active" : "configured") : ""}"
+                          data-addr="${dev.address}"
+                          title="${escapeHtml(this._t("dynamic_btn_title"))}"
+                        >
+                          ${ICONS.clock}
+                          <span>
+                            ${dev.dynamic_zone && dev.dynamic_zone.enabled
+                              ? (dev.dynamic_zone.active
+                                  ? escapeHtml(this._t("dynamic_badge_active", dynamicTargetLabel, dev.dynamic_zone.start_time, dev.dynamic_zone.end_time))
+                                  : escapeHtml(this._t("dynamic_badge", dynamicTargetLabel, dev.dynamic_zone.start_time, dev.dynamic_zone.end_time)))
+                              : escapeHtml(this._t("dynamic_btn_add"))}
+                          </span>
+                        </button>
+                      </div>
+                    ` : ""}
                   </div>
                 </div>
               `;
@@ -808,6 +1176,90 @@ class InventerE16DevicesCard extends HTMLElement {
           </div>
         `}
       </ha-card>
+
+      ${this._editingDynamicAddress !== null && this._dynamicForm ? `
+        <div class="modal-overlay" id="dyn-modal-overlay">
+          <div class="modal-card">
+            <div class="modal-header">
+              <div class="modal-title">
+                ${ICONS.clock}
+                <span>${escapeHtml(this._t("dynamic_modal_title", this._devices.find((d) => d.address === this._editingDynamicAddress)?.name || `#${this._editingDynamicAddress}`))}</span>
+              </div>
+              <button class="icon-btn" id="btn-dyn-close" title="${escapeHtml(this._t("btn_cancel"))}">
+                ${ICONS.close}
+              </button>
+            </div>
+
+            <div class="modal-desc">
+              ${escapeHtml(this._t("dynamic_modal_desc"))}
+            </div>
+
+            <div class="modal-row horizontal">
+              <label class="modal-label" for="dyn-enabled">${escapeHtml(this._t("dynamic_enabled"))}</label>
+              <input type="checkbox" id="dyn-enabled" ${this._dynamicForm.enabled ? "checked" : ""} />
+            </div>
+
+            <div class="modal-row">
+              <label class="modal-label" for="dyn-target-zone">${escapeHtml(this._t("dynamic_target_zone_label"))}</label>
+              <select id="dyn-target-zone" class="modal-select">
+                ${this._zones.map((z) => `
+                  <option value="${z.zone_id}" ${this._dynamicForm.target_zone === z.zone_id ? "selected" : ""}>
+                    ${escapeHtml(z.name || `Zone ${z.zone_id}`)}
+                  </option>
+                `).join("")}
+              </select>
+            </div>
+
+            <div class="modal-time-grid">
+              <div class="modal-row">
+                <label class="modal-label" for="dyn-start-time">${escapeHtml(this._t("dynamic_start_time_label"))}</label>
+                <input type="time" id="dyn-start-time" class="modal-input" value="${escapeHtml(this._dynamicForm.start_time)}" />
+              </div>
+              <div class="modal-row">
+                <label class="modal-label" for="dyn-end-time">${escapeHtml(this._t("dynamic_end_time_label"))}</label>
+                <input type="time" id="dyn-end-time" class="modal-input" value="${escapeHtml(this._dynamicForm.end_time)}" />
+              </div>
+            </div>
+
+            <div class="modal-row">
+              <label class="modal-label">${escapeHtml(this._t("dynamic_weekdays_label"))}</label>
+              <div class="days-chips-row">
+                ${["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((dayName, idx) => {
+                  const isSel = this._dynamicForm.weekdays.includes(idx);
+                  return `
+                    <div class="day-chip ${isSel ? "active" : ""}" data-day="${idx}">
+                      ${dayName}
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+              <div class="quick-days-row">
+                <button type="button" class="quick-btn" id="btn-quick-workdays">${escapeHtml(this._t("quick_workdays"))}</button>
+                <button type="button" class="quick-btn" id="btn-quick-weekend">${escapeHtml(this._t("quick_weekend"))}</button>
+                <button type="button" class="quick-btn" id="btn-quick-all">${escapeHtml(this._t("quick_all"))}</button>
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <div>
+                ${this._dynamicForm.hasExisting ? `
+                  <button type="button" class="btn-danger" id="btn-dyn-delete">
+                    ${escapeHtml(this._t("btn_delete_rule"))}
+                  </button>
+                ` : ""}
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-secondary" id="btn-dyn-cancel">
+                  ${escapeHtml(this._t("btn_cancel"))}
+                </button>
+                <button type="button" class="btn-primary" id="btn-dyn-save">
+                  ${escapeHtml(this._t("btn_save"))}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ` : ""}
     `;
 
     this._bindEvents();
@@ -854,6 +1306,96 @@ class InventerE16DevicesCard extends HTMLElement {
         this._setDeviceZone(addr, targetZone);
       });
     });
+
+    // Dynamic schedule buttons
+    const dynButtons = root.querySelectorAll(".dynamic-schedule-btn");
+    dynButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const addr = parseInt(btn.getAttribute("data-addr"), 10);
+        this._openDynamicDialog(addr);
+      });
+    });
+
+    // Dynamic zone modal bindings
+    if (this._editingDynamicAddress !== null && this._dynamicForm) {
+      const overlay = root.getElementById("dyn-modal-overlay");
+      const btnClose = root.getElementById("btn-dyn-close");
+      const btnCancel = root.getElementById("btn-dyn-cancel");
+      const btnSave = root.getElementById("btn-dyn-save");
+      const btnDelete = root.getElementById("btn-dyn-delete");
+
+      const closeHandler = () => this._closeDynamicDialog();
+      if (btnClose) btnClose.addEventListener("click", closeHandler);
+      if (btnCancel) btnCancel.addEventListener("click", closeHandler);
+      if (overlay) {
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) closeHandler();
+        });
+      }
+
+      const enabledCheckbox = root.getElementById("dyn-enabled");
+      if (enabledCheckbox) {
+        enabledCheckbox.addEventListener("change", (e) => {
+          this._dynamicForm.enabled = e.target.checked;
+        });
+      }
+
+      const targetZoneSelect = root.getElementById("dyn-target-zone");
+      if (targetZoneSelect) {
+        targetZoneSelect.addEventListener("change", (e) => {
+          this._dynamicForm.target_zone = parseInt(e.target.value, 10);
+        });
+      }
+
+      const startTimeInput = root.getElementById("dyn-start-time");
+      if (startTimeInput) {
+        startTimeInput.addEventListener("change", (e) => {
+          this._dynamicForm.start_time = e.target.value;
+        });
+      }
+
+      const endTimeInput = root.getElementById("dyn-end-time");
+      if (endTimeInput) {
+        endTimeInput.addEventListener("change", (e) => {
+          this._dynamicForm.end_time = e.target.value;
+        });
+      }
+
+      const dayChips = root.querySelectorAll(".day-chip");
+      dayChips.forEach((chip) => {
+        chip.addEventListener("click", () => {
+          const day = parseInt(chip.getAttribute("data-day"), 10);
+          const idx = this._dynamicForm.weekdays.indexOf(day);
+          if (idx >= 0) {
+            this._dynamicForm.weekdays.splice(idx, 1);
+            chip.classList.remove("active");
+          } else {
+            this._dynamicForm.weekdays.push(day);
+            chip.classList.add("active");
+          }
+        });
+      });
+
+      const setDays = (days) => {
+        this._dynamicForm.weekdays = [...days];
+        dayChips.forEach((chip) => {
+          const day = parseInt(chip.getAttribute("data-day"), 10);
+          chip.classList.toggle("active", days.includes(day));
+        });
+      };
+
+      const btnWorkdays = root.getElementById("btn-quick-workdays");
+      if (btnWorkdays) btnWorkdays.addEventListener("click", () => setDays([0, 1, 2, 3, 4]));
+
+      const btnWeekend = root.getElementById("btn-quick-weekend");
+      if (btnWeekend) btnWeekend.addEventListener("click", () => setDays([5, 6]));
+
+      const btnAll = root.getElementById("btn-quick-all");
+      if (btnAll) btnAll.addEventListener("click", () => setDays([0, 1, 2, 3, 4, 5, 6]));
+
+      if (btnDelete) btnDelete.addEventListener("click", () => this._deleteDynamicZone());
+      if (btnSave) btnSave.addEventListener("click", () => this._saveDynamicZone());
+    }
   }
 }
 
@@ -957,7 +1499,7 @@ window.customCards.push({
 });
 
 console.info(
-  "%c inVENTer e16 %c Geräteverwaltung-Karte geladen ",
+  "%c inVENTer e16 %c Geräteverwaltung-Karte v0.3.18 (Dynamic Zones) geladen ",
   "color: white; background: #03a9f4; font-weight: 700;",
   "color: #03a9f4; background: white; font-weight: 700;"
 );

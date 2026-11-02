@@ -156,6 +156,46 @@
           "description": "Nummer der Zone (1–4), der das Gerät zugeordnet werden soll."
         }
       }
+    },
+    "set_dynamic_device_zone": {
+      "name": "Dynamische Geräte-Zone festlegen",
+      "description": "Richtet ein Zeitfenster ein, in dem ein Gerät vorübergehend in eine andere Zone wechselt.",
+      "fields": {
+        "address": {
+          "name": "Geräteadresse",
+          "description": "Busadresse des Geräts (0–31)."
+        },
+        "target_zone": {
+          "name": "Ziel-Zone",
+          "description": "Zonennummer, in die das Gerät während des Zeitfensters wechselt."
+        },
+        "start_time": {
+          "name": "Startzeit",
+          "description": "Uhrzeit (HH:MM), zu der in die Ziel-Zone gewechselt wird."
+        },
+        "end_time": {
+          "name": "Endzeit",
+          "description": "Uhrzeit (HH:MM), zu der in die ursprüngliche Zone zurückgewechselt wird."
+        },
+        "enabled": {
+          "name": "Aktiviert",
+          "description": "Gibt an, ob dieser dynamische Zeitplan aktiv ist."
+        },
+        "original_zone": {
+          "name": "Ursprüngliche Zone",
+          "description": "Zone, in die zurückgewechselt wird (optional, standardmäßig aktuelle Zone)."
+        }
+      }
+    },
+    "delete_dynamic_device_zone": {
+      "name": "Dynamische Geräte-Zone löschen",
+      "description": "Löscht den dynamischen Zonen-Zeitplan für ein Gerät und setzt es auf die ursprüngliche Zone zurück.",
+      "fields": {
+        "address": {
+          "name": "Geräteadresse",
+          "description": "Busadresse des Geräts (0–31)."
+        }
+      }
     }
   },
   "selector": {

@@ -186,4 +186,55 @@ set_device_zone:
           min: 1
           max: 8
           mode: box
+set_dynamic_device_zone:
+  target:
+    entity:
+      integration: inventer_e16
+      domain: fan
+  fields:
+    address:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 31
+          mode: box
+    target_zone:
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 8
+          mode: box
+    start_time:
+      required: true
+      selector:
+        time:
+    end_time:
+      required: true
+      selector:
+        time:
+    enabled:
+      default: true
+      selector:
+        boolean:
+    original_zone:
+      selector:
+        number:
+          min: 1
+          max: 8
+          mode: box
+delete_dynamic_device_zone:
+  target:
+    entity:
+      integration: inventer_e16
+      domain: fan
+  fields:
+    address:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 31
+          mode: box
 
