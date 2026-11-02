@@ -7,6 +7,21 @@
  * and allows assigning them to any configured zone.
  */
 
+/**
+ * Escape a string for safe insertion into HTML markup or attribute values.
+ * @param {*} text
+ * @returns {string}
+ */
+function escapeHtml(text) {
+  if (text === null || text === undefined) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 const ICONS = {
   fan: `<svg viewBox="0 0 24 24" class="dev-icon"><path fill="currentColor" d="M12 11a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm0-9C7.03 2 3 6.03 3 11c0 2.12.74 4.07 1.97 5.61L4.35 18H2v2h3.35l.86 1.49A9.95 9.95 0 0 0 12 22c4.97 0 9-4.03 9-9 0-4.97-4.03-9-9-9zm0 18c-3.15 0-5.9-1.84-7.21-4.52l2.36-.63a5.98 5.98 0 0 1 4.85 2.15v3zm-4.73-7.5c-.17-.47-.27-.97-.27-1.5 0-2.48 2.02-4.5 4.5-4.5.34 0 .67.04 1 .11V5.7a7.99 7.99 0 0 0-6.19 5.86l.96.94zm9.46 0l.96-.94A7.99 7.99 0 0 0 11.5 5.7v2.91c.33-.07.66-.11 1-.11 2.48 0 4.5 2.02 4.5 4.5 0 .53-.1 1.03-.27 1.5zm-2.25 4.52C13.16 16.52 11.63 17 10 17v3c2.45 0 4.67-.99 6.28-2.6l-1.8-1.38z"/></svg>`,
   sensor: `<svg viewBox="0 0 24 24" class="dev-icon"><path fill="currentColor" d="M15 13V5a3 3 0 0 0-6 0v8a5 5 0 1 0 6 0m-3-9a1 1 0 0 1 1 1v3h-2V5a1 1 0 0 1 1-1Z"/></svg>`,
@@ -16,6 +31,47 @@ const ICONS = {
   refresh: `<svg viewBox="0 0 24 24" class="action-icon"><path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>`,
   zone: `<svg viewBox="0 0 24 24" class="zone-icon"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>`,
   checkmark: `<svg viewBox="0 0 24 24" class="status-icon"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`
+};
+
+const STRINGS = {
+  card_title: { de: "inVENTer e16 – Geräte & Zonen", en: "inVENTer e16 – Devices & Zones" },
+  subtitle: {
+    de: (d, z) => `${d} erkannte Geräte in ${z} Zonen`,
+    en: (d, z) => `${d} detected device(s) in ${z} zone(s)`
+  },
+  refresh_title: { de: "Vom Regler aktualisieren", en: "Refresh from controller" },
+  filter_all: { de: "Alle", en: "All" },
+  filter_fan: { de: "Lüfter", en: "Fans" },
+  filter_sensor: { de: "Sensoren", en: "Sensors" },
+  filter_controller: { de: "Regler", en: "Controllers" },
+  all_zones: { de: "Alle Zonen", en: "All zones" },
+  empty_loading: { de: "Lade Geräte...", en: "Loading devices..." },
+  empty_none: { de: "Keine Geräte für die gewählte Filterung gefunden.", en: "No devices found for the selected filter." },
+  signal_level: { de: "Signalpegel", en: "Signal level" },
+  temperature: { de: "Temperatur", en: "Temperature" },
+  humidity: { de: "Luftfeuchtigkeit", en: "Humidity" },
+  battery_status: { de: "Batteriestatus", en: "Battery status" },
+  runtime: { de: "Betriebsstunden", en: "Runtime" },
+  firmware_version: { de: "Firmware Version", en: "Firmware version" },
+  assigned_zone: { de: "Zugewiesene Zone:", en: "Assigned zone:" },
+  assign_title: {
+    de: (addr, name) => `Gerät #${addr} Zone '${name}' zuweisen`,
+    en: (addr, name) => `Assign device #${addr} to zone '${name}'`
+  },
+  err_fetch: { de: "Fehler beim Laden der Geräte: ", en: "Error loading devices: " },
+  status_pre_assign: { de: "Lade aktuellen Gerätestand vom Regler vor der Änderung...", en: "Loading current device state from controller before change..." },
+  err_pre_assign: { de: "Fehler: Gerätedaten konnten nicht vom Regler abgerufen werden. Änderung abgebrochen.", en: "Error: Could not retrieve device data from controller. Change cancelled." },
+  status_assigning: {
+    de: (addr, zone) => `Weise Gerät #${addr} Zone ${zone} zu...`,
+    en: (addr, zone) => `Assigning device #${addr} to zone ${zone}...`
+  },
+  status_assigned: {
+    de: (addr, zone) => `Gerät #${addr} erfolgreich Zone ${zone} zugewiesen!`,
+    en: (addr, zone) => `Device #${addr} successfully assigned to zone ${zone}!`
+  },
+  err_assign: { de: "Fehler beim Zuweisen: ", en: "Error assigning: " },
+  editor_title: { de: "Kartentitel", en: "Card title" },
+  editor_entity: { de: "Lüfter-Entität (optional, sonst Auto-Erkennung)", en: "Fan entity (optional, auto-detected if blank)" },
 };
 
 class InventerE16DevicesCard extends HTMLElement {
@@ -37,6 +93,17 @@ class InventerE16DevicesCard extends HTMLElement {
     this._statusMessage = "";
     this._initialFetchDone = false;
     this._hasPulled = false;
+  }
+
+  _t(key, ...args) {
+    const lang = (this._hass?.locale?.language || "de").toLowerCase().startsWith("de") ? "de" : "en";
+    const item = STRINGS[key];
+    if (!item) return key;
+    const val = item[lang] || item["de"];
+    if (typeof val === "function") {
+      return val(...args);
+    }
+    return val;
   }
 
   set hass(hass) {
@@ -156,8 +223,8 @@ class InventerE16DevicesCard extends HTMLElement {
         this._hasPulled = true;
       }
     } catch (err) {
-      console.error("Fehler beim Laden der Geräte:", err);
-      this._errorMessage = "Fehler beim Laden der Geräte: " + (err.message || err);
+      console.error("Error loading devices:", err);
+      this._errorMessage = this._t("err_fetch") + (err.message || err);
     } finally {
       this._loading = false;
       this._refreshing = false;
@@ -169,14 +236,14 @@ class InventerE16DevicesCard extends HTMLElement {
     const entityId = this._getTargetEntity();
     if (!entityId || !this._hass) return;
 
-    // Sicherstellen, dass vor einer Zonenänderung mindestens 1x frisch vom Regler gelesen wurde
+    // Ensure device data has been fetched from controller at least once before making changes
     if (!this._hasPulled) {
       this._loading = true;
-      this._statusMessage = "Lade aktuellen Gerätestand vom Regler vor der Änderung...";
+      this._statusMessage = this._t("status_pre_assign");
       this._render();
       await this._fetchDevices(true);
       if (!this._hasPulled) {
-        this._errorMessage = "Fehler: Gerätedaten konnten nicht vom Regler abgerufen werden. Änderung abgebrochen.";
+        this._errorMessage = this._t("err_pre_assign");
         this._loading = false;
         this._render();
         return;
@@ -185,7 +252,7 @@ class InventerE16DevicesCard extends HTMLElement {
 
     this._assigningAddress = address;
     this._errorMessage = "";
-    this._statusMessage = `Weise Gerät #${address} Zone ${newZoneId} zu...`;
+    this._statusMessage = this._t("status_assigning", address, newZoneId);
 
     // Optimistic UI update
     const dev = this._devices.find((d) => d.address === address);
@@ -208,19 +275,20 @@ class InventerE16DevicesCard extends HTMLElement {
         { entity_id: entityId }
       );
 
-      this._statusMessage = `Gerät #${address} erfolgreich Zone ${newZoneId} zugewiesen!`;
+      const successMsg = this._t("status_assigned", address, newZoneId);
+      this._statusMessage = successMsg;
       setTimeout(() => {
-        if (this._statusMessage.includes("erfolgreich")) {
+        if (this._statusMessage === successMsg) {
           this._statusMessage = "";
           this._render();
         }
       }, 3500);
 
-      // Nach erfolgreicher Änderung sofort frisch vom Regler synchronisieren
+      // Refresh from controller after successful change
       await this._fetchDevices(true);
     } catch (err) {
-      console.error("Fehler beim Zuweisen der Zone:", err);
-      this._errorMessage = "Fehler beim Zuweisen: " + (err.message || err);
+      console.error("Error assigning zone:", err);
+      this._errorMessage = this._t("err_assign") + (err.message || err);
       if (dev && oldZoneId !== null) {
         dev.zone = oldZoneId;
         const oldZone = this._zones.find((z) => z.zone_id === oldZoneId);
@@ -250,7 +318,7 @@ class InventerE16DevicesCard extends HTMLElement {
     const root = this.shadowRoot;
     if (!root) return;
 
-    const cardTitle = this._config && this._config.title ? this._config.title : "inVENTer e16 – Geräte & Zonen";
+    const cardTitle = this._config && this._config.title ? this._config.title : this._t("card_title");
     const filtered = this._getFilteredDevices();
     const fanCount = this._devices.filter((d) => d.hardware === 2).length;
     const sensorCount = this._devices.filter((d) => d.hardware === 3).length;
@@ -588,13 +656,13 @@ class InventerE16DevicesCard extends HTMLElement {
       <ha-card>
         <div class="header">
           <div class="title-area">
-            <span class="title">${cardTitle}</span>
+            <span class="title">${escapeHtml(cardTitle)}</span>
             <span class="subtitle">
-              ${this._devices.length} erkannte Geräte in ${this._zones.length} Zonen
+              ${escapeHtml(this._t("subtitle", this._devices.length, this._zones.length))}
             </span>
           </div>
           <div class="header-actions">
-            <button class="icon-btn ${this._refreshing ? "spinning" : ""}" id="btn-refresh" title="Vom Regler aktualisieren">
+            <button class="icon-btn ${this._refreshing ? "spinning" : ""}" id="btn-refresh" title="${escapeHtml(this._t("refresh_title"))}">
               ${ICONS.refresh}
             </button>
           </div>
@@ -617,17 +685,17 @@ class InventerE16DevicesCard extends HTMLElement {
         <!-- Filter Chips Bar -->
         <div class="filter-bar">
           <div class="chip ${this._filterType === "all" ? "active" : ""}" data-type="all">
-            Alle (${this._devices.length})
+            ${escapeHtml(this._t("filter_all"))} (${this._devices.length})
           </div>
           <div class="chip ${this._filterType === "fan" ? "active" : ""}" data-type="fan">
-            Lüfter (${fanCount})
+            ${escapeHtml(this._t("filter_fan"))} (${fanCount})
           </div>
           <div class="chip ${this._filterType === "sensor" ? "active" : ""}" data-type="sensor">
-            Sensoren (${sensorCount})
+            ${escapeHtml(this._t("filter_sensor"))} (${sensorCount})
           </div>
           ${controllerCount > 0 ? `
             <div class="chip ${this._filterType === "controller" ? "active" : ""}" data-type="controller">
-              Regler (${controllerCount})
+              ${escapeHtml(this._t("filter_controller"))} (${controllerCount})
             </div>
           ` : ""}
         </div>
@@ -635,14 +703,14 @@ class InventerE16DevicesCard extends HTMLElement {
         <!-- Zones summary filter row -->
         <div class="zones-summary">
           <div class="zone-chip ${this._filterZone === 0 ? "active" : ""}" data-zone="0">
-            ${ICONS.zone} Alle Zonen
+            ${ICONS.zone} ${escapeHtml(this._t("all_zones"))}
           </div>
           ${this._zones.map((z) => {
             const count = this._devices.filter((d) => d.zone === z.zone_id).length;
             const isAct = this._filterZone === z.zone_id;
             return `
               <div class="zone-chip ${isAct ? "active" : ""}" data-zone="${z.zone_id}">
-                ${ICONS.zone} ${z.name || `Zone ${z.zone_id}`} (${count})
+                ${ICONS.zone} ${escapeHtml(z.name || `Zone ${z.zone_id}`)} (${count})
               </div>
             `;
           }).join("")}
@@ -651,7 +719,7 @@ class InventerE16DevicesCard extends HTMLElement {
         <!-- Devices List -->
         ${filtered.length === 0 ? `
           <div class="empty-state">
-            ${this._loading ? "Lade Geräte..." : "Keine Geräte für die gewählte Filterung gefunden."}
+            ${this._loading ? escapeHtml(this._t("empty_loading")) : escapeHtml(this._t("empty_none"))}
           </div>
         ` : `
           <div class="devices-grid">
@@ -671,42 +739,42 @@ class InventerE16DevicesCard extends HTMLElement {
                     </div>
                     <div class="device-header-info">
                       <div class="device-name-row">
-                        <span class="device-name" title="${dev.name}">${dev.name}</span>
+                        <span class="device-name" title="${escapeHtml(dev.name)}">${escapeHtml(dev.name)}</span>
                         <span class="addr-badge">#${dev.address}</span>
                         <span class="status-dot ${dev.online ? "online" : "offline"}" title="${dev.online ? "Online" : "Offline"}"></span>
                       </div>
-                      <div class="device-model">${dev.type_name || `Typ ${dev.type}`} · ${dev.hardware_name || ""}</div>
+                      <div class="device-model">${escapeHtml(dev.type_name || `Typ ${dev.type}`)} · ${escapeHtml(dev.hardware_name || "")}</div>
                     </div>
                   </div>
 
                   <div class="metrics-row">
                     ${dev.signal !== null ? `
-                      <span class="metric-badge" title="Signalpegel">
+                      <span class="metric-badge" title="${escapeHtml(this._t("signal_level"))}">
                         ${ICONS.signal} ${dev.signal} dBm
                       </span>
                     ` : ""}
                     ${dev.temperature !== null ? `
-                      <span class="metric-badge" title="Temperatur">
+                      <span class="metric-badge" title="${escapeHtml(this._t("temperature"))}">
                         🌡️ ${dev.temperature.toFixed(1)} °C
                       </span>
                     ` : ""}
                     ${dev.humidity !== null ? `
-                      <span class="metric-badge" title="Luftfeuchtigkeit">
+                      <span class="metric-badge" title="${escapeHtml(this._t("humidity"))}">
                         💧 ${dev.humidity.toFixed(0)} %
                       </span>
                     ` : ""}
                     ${dev.battery !== null ? `
-                      <span class="metric-badge" title="Batteriestatus">
+                      <span class="metric-badge" title="${escapeHtml(this._t("battery_status"))}">
                         ${ICONS.battery} ${dev.battery.toFixed(0)} %
                       </span>
                     ` : ""}
                     ${dev.runtime ? `
-                      <span class="metric-badge" title="Betriebsstunden">
+                      <span class="metric-badge" title="${escapeHtml(this._t("runtime"))}">
                         ⏱️ ${Math.round(dev.runtime / 3600)} h
                       </span>
                     ` : ""}
                     ${dev.firmware ? `
-                      <span class="metric-badge" title="Firmware Version">
+                      <span class="metric-badge" title="${escapeHtml(this._t("firmware_version"))}">
                         v${dev.firmware}
                       </span>
                     ` : ""}
@@ -715,8 +783,8 @@ class InventerE16DevicesCard extends HTMLElement {
                   <!-- Zone Assignment -->
                   <div class="zone-assign-box">
                     <div class="zone-assign-label">
-                      <span>Zugewiesene Zone:</span>
-                      <span class="current-zone-name">${dev.zone_name || `Zone ${dev.zone}`}</span>
+                      <span>${escapeHtml(this._t("assigned_zone"))}</span>
+                      <span class="current-zone-name">${escapeHtml(dev.zone_name || `Zone ${dev.zone}`)}</span>
                     </div>
                     <div class="zone-btn-row">
                       ${this._zones.map((z) => {
@@ -726,9 +794,9 @@ class InventerE16DevicesCard extends HTMLElement {
                             class="zone-btn ${isAssigned ? "active" : ""}" 
                             data-addr="${dev.address}" 
                             data-zone="${z.zone_id}"
-                            title="Gerät #${dev.address} Zone '${z.name || z.zone_id}' zuweisen"
+                            title="${escapeHtml(this._t("assign_title", dev.address, z.name || z.zone_id))}"
                           >
-                            ${z.name || `Zone ${z.zone_id}`}
+                            ${escapeHtml(z.name || `Zone ${z.zone_id}`)}
                           </button>
                         `;
                       }).join("")}
@@ -790,13 +858,23 @@ class InventerE16DevicesCard extends HTMLElement {
 }
 
 class InventerE16DevicesCardEditor extends HTMLElement {
+  set hass(hass) {
+    this._hass = hass;
+  }
+
   setConfig(config) {
     this._config = config;
     this._render();
   }
 
+  _t(key) {
+    const lang = (this._hass?.locale?.language || "de").toLowerCase().startsWith("de") ? "de" : "en";
+    const item = STRINGS[key];
+    return item ? (item[lang] || item["de"]) : key;
+  }
+
   _render() {
-    const currentTitle = this._config && this._config.title ? this._config.title : "inVENTer e16 – Geräte & Zonen";
+    const currentTitle = this._config && this._config.title ? this._config.title : this._t("card_title");
     const currentEntity = this._config && this._config.entity ? this._config.entity : "";
 
     this.innerHTML = `
@@ -829,12 +907,12 @@ class InventerE16DevicesCardEditor extends HTMLElement {
       </style>
       <div class="editor-form">
         <div class="form-row">
-          <label for="input-title">Kartentitel</label>
-          <input type="text" id="input-title" value="${currentTitle}" placeholder="inVENTer e16 – Geräte & Zonen" />
+          <label for="input-title">${escapeHtml(this._t("editor_title"))}</label>
+          <input type="text" id="input-title" value="${escapeHtml(currentTitle)}" placeholder="${escapeHtml(this._t("card_title"))}" />
         </div>
         <div class="form-row">
-          <label for="input-entity">Lüfter-Entität (optional, sonst Auto-Erkennung)</label>
-          <input type="text" id="input-entity" value="${currentEntity}" placeholder="fan.inventer_..." />
+          <label for="input-entity">${escapeHtml(this._t("editor_entity"))}</label>
+          <input type="text" id="input-entity" value="${escapeHtml(currentEntity)}" placeholder="fan.inventer_..." />
         </div>
       </div>
     `;

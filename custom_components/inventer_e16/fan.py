@@ -20,7 +20,7 @@ PRESET_TO_FAN = {HEAT_RECOVERY: client.FAN_HEAT_RECOVERY, VENTILATION: client.FA
 # Zone status reports 1 = ventilation, 2 = heat recovery (other table than the command)
 READ_MODE_TO_PRESET = {1: VENTILATION, 2: HEAT_RECOVERY}
 SPEEDS = 4
-HARDWARE_NAMES = {1: "Regler", 2: "Lüfter", 3: "Sensor", 6: "WLAN-Modul"}
+HARDWARE_NAMES = {1: "Controller", 2: "Fan", 3: "Sensor", 6: "Wi-Fi module"}
 # Service set_mode: time-limited command with explicit mode, speed and duration - for automations.
 # The pause modes are what the app's mode dialog sends (always with speed 0); unlike turn_off they end.
 SET_MODE_MODES = {HEAT_RECOVERY: client.FAN_HEAT_RECOVERY, VENTILATION: client.FAN_VENTILATION,
@@ -217,7 +217,7 @@ class E16Fan(E16Entity, FanEntity):
         for d in info_data.get("devices", []):
             name = d.get("name")
             if not name:
-                name = "Regler" if d["type"] == 1 else f"Gerät {d['address']}"
+                name = "Controller" if d["type"] == 1 else f"Device {d['address']}"
             devices.append({
                 "address": d["address"],
                 "name": name,

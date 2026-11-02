@@ -7,6 +7,8 @@ Testing environment is a multi zone setup with iv14zero and twin+ vents.
 I am an experienced hardware technician and software dev but use 100% AI to code this in my spare time. (as well as the main repo i guess, no disclaimer but lots of agent mds etc)
 I test everything on my own setup before releasing it into my main, bugs will appear :)
 
+Please submit issues, if requested of course we can find a communication channel. (issues is super slow imho :( ))
+
 Additional features in this fork:
 - **Multi-zone support:** Manage multi-zone setups, zone fans, statuses, and assign profiles per zone.
 - **Support for all fan modes:** Full control over `heat_recovery`, `ventilation`, and both pause flap modes (`pause` flap closed, `pause_open` flap open).

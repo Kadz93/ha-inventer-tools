@@ -6,6 +6,7 @@ from homeassistant.components.select import SelectEntity
 from homeassistant.const import EntityCategory
 
 from . import client
+from .const import DOMAIN
 from .entity import E16Entity
 from .sensor import override_active
 
@@ -100,6 +101,14 @@ class E16Profile(E16Entity, SelectEntity):
     @property
     def current_option(self):
         return self._current()
+
+    @property
+    def extra_state_attributes(self):
+        """Return entity specific state attributes."""
+        return {
+            "integration": DOMAIN,
+            "zone_id": self.coordinator.data["zone_id"],
+        }
 
     async def async_select_option(self, option):
         value = next(k for k, v in {**PROFILES, **HIDDEN_PROFILES}.items() if v == option)

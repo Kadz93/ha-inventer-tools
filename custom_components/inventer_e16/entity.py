@@ -7,7 +7,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .client import version_text
 from .const import CONF_DEVICE_ID, DOMAIN
 
-MODELS = {1: "Easy Connect e16", 2: "iV14-Zero", 4: "Indoor sensor", 5: "Outdoor sensor",
+MODELS = {1: "Easy Connect e16", 2: "Fan unit", 3: "Fan unit", 4: "Indoor sensor", 5: "Outdoor sensor",
           27: "iV-Twin+"}
 
 
