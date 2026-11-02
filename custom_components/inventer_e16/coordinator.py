@@ -31,6 +31,10 @@ class E16Data:
     def zone(self) -> "E16ZoneCoordinator | None":
         return self.zones[0] if self.zones else None
 
+    @property
+    def is_multi_zone(self) -> bool:
+        return len(self.zones) > 1
+
 
 class E16ZoneCoordinator(DataUpdateCoordinator):
     def __init__(self, hass, entry, client, zone_index=0):
@@ -44,6 +48,13 @@ class E16ZoneCoordinator(DataUpdateCoordinator):
         self.zone_index = zone_index
         # Duration for speed/mode commands; the app offers 15 min to 8 h
         self.override_minutes = 60
+
+    @property
+    def is_multi_zone(self) -> bool:
+        runtime_data = getattr(self.config_entry, "runtime_data", None)
+        if runtime_data and hasattr(runtime_data, "zones"):
+            return len(runtime_data.zones) > 1
+        return False
 
     async def _async_update_data(self):
         try:

@@ -43,9 +43,6 @@ class E16Duration(E16Entity, RestoreNumber):
     _attr_native_step = 15
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
 
-    def __init__(self, coordinator, entry, key, zone_id=None):
-        super().__init__(coordinator, entry, key, zone_id=zone_id)
-
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
         last = await self.async_get_last_number_data()

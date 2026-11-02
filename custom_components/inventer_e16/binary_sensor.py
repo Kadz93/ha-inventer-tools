@@ -45,9 +45,6 @@ class E16Problem(E16Entity, BinarySensorEntity):
     """System status not zero - no interpretation of single bits."""
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
-    def __init__(self, coordinator, entry, key, zone_id=None):
-        super().__init__(coordinator, entry, key, zone_id=zone_id)
-
     @property
     def is_on(self):
         return self.coordinator.data["status"] != 0

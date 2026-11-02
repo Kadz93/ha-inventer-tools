@@ -36,8 +36,7 @@ class E16Command(E16Entity, ButtonEntity):
         self.command = command
 
     async def async_press(self):
-        multi = len(self.coordinator.config_entry.runtime_data.zones) > 1
-        if multi:
+        if self.coordinator.is_multi_zone:
             zid = self.coordinator.data["zone_id"]
             if self.key == "boost":
                 await self.coordinator.async_override(

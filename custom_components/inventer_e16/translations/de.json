@@ -153,7 +153,7 @@
         },
         "zone": {
           "name": "Zonen-ID",
-          "description": "Nummer der Zone (1–8), der das Gerät zugeordnet werden soll."
+          "description": "Nummer der Zone (1–4), der das Gerät zugeordnet werden soll."
         }
       }
     }
@@ -418,7 +418,7 @@
         "name": "Betriebsart",
         "state": {
           "heat_recovery": "Wärmerückgewinnung",
-          "ventilation": "Durchzug",
+          "ventilation": "Durchlüftung",
           "pause": "Geschlossene Klappe",
           "pause_open": "Offene Klappe"
         }

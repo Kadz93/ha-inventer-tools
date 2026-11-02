@@ -278,6 +278,13 @@ def test_get_zones(monkeypatch):
     assert zones[1]["zone_id"] == 2 and zones[1]["name"] == "Zone 2"
 
 
+def test_get_zones_max_zones(monkeypatch):
+    replies = b"".join(_make_zone_reply(i, f"Zone {i}") for i in range(1, 6))
+    connection = FakeConnection(replies)
+    zones = _client_with(monkeypatch, connection).get_zones()
+    assert len(zones) == client.MAX_ZONES == 4
+
+
 def test_user_override_with_zone_index(monkeypatch):
     reply = _make_zone_reply(2, "Zone 2")
     connection = RecordingConnection(reply)
