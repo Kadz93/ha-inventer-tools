@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Tobias Krautkremer
+# Copyright (c) 2026 Markus Hennig
 """Config flow: user, DHCP discovery, re-authentication and reconfigure."""
 from unittest.mock import AsyncMock, MagicMock, patch
 

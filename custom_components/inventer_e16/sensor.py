@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Tobias Krautkremer
+# Copyright (c) 2026 Markus Hennig
 """Zone values, maintenance dates, Wi-Fi and radio values, runtimes."""
 from datetime import timedelta
 

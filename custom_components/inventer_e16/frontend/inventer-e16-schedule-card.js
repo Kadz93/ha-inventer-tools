@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Markus Hennig
 /**
  * inVENTer Easy Connect e16 - Lovelace Schedule Custom Card
  * 

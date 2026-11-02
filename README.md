@@ -334,7 +334,10 @@ dependency and can be used on its own.
 
 ## License
 
-Copyright (c) 2026 Tobias Krautkremer. Released under the [MIT License](LICENSE): you may use,
+Copyright (c) 2026 Tobias Krautkremer
+Copyright (c) 2026 Markus Hennig
+
+Released under the [MIT License](LICENSE): you may use,
 copy, modify and distribute this software, including commercially, as long as the copyright
 notice and the license text are kept. Source files carry the identifier
 `SPDX-License-Identifier: MIT`.

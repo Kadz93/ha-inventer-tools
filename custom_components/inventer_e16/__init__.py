@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Tobias Krautkremer
+# Copyright (c) 2026 Markus Hennig
 """inVENTer Easy Connect e16 - local control over Wi-Fi (TLS-PSK)."""
 import logging
 from pathlib import Path

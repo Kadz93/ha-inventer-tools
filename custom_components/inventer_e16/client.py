@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Tobias Krautkremer
+# Copyright (c) 2026 Markus Hennig
 """Local Zirconia client for the inVENTer Easy Connect e16 (TLS-PSK, TCP 47820).
 
 Pure Python, no Home Assistant imports, so it can be tested on its own.

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Tobias Krautkremer
+# Copyright (c) 2026 Markus Hennig
 """State derived from the zone status: fan on/off and whether the last command still applies."""
 from datetime import time
 import struct
