@@ -27,6 +27,7 @@ class E16Data:
     zones: list["E16ZoneCoordinator"]
     info: "E16InfoCoordinator"
     main_device_id: str | None = None
+    dynamic_zones: object | None = None
 
     @property
     def zone(self) -> "E16ZoneCoordinator | None":

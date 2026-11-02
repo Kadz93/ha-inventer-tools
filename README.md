@@ -16,6 +16,7 @@ Additional features in this fork:
 - **Automated slot allocation:** During profile creation, free memory slots (Speicherplätze 0–31) are assigned automatically without requiring manual slot selection.
 - **Controller pre-write sync:** The integration / card always pulls the schedule from the physical controller first before executing any write or delete operation.
 - **Lovelace Custom Card (`inventer-e16-devices-card`):** View all detected wireless devices (fans, sensors, controller) with live telemetry, filter by type or zone, and reassign devices to zones with a single click via the `get_devices` and `set_device_zone` services.
+- **Dynamic Zones (zeitgesteuerte Zonenumschaltung):** Temporarily reassign single devices (e.g. a bedroom fan) to another zone (e.g. an exhaust or temporary zone) based on a configured time window (e.g. overnight 22:00–07:00), and switch them back automatically. *(Note: This feature relies entirely on Home Assistant's internal logic and scheduler, NOT on controller firmware logic, as the physical e16 controller only supports static device-to-zone allocations).*
 
 > [!WARNING]
 > ** Important Warning:**
@@ -236,6 +237,61 @@ title: inVENTer e16 – Geräte & Zonen
 | `type` | string | **required** | `custom:inventer-e16-devices-card` |
 | `entity` | string | *auto-detect* | The `fan` entity ID of an inVENTer zone (e.g. `fan.inventer_living_room`). If omitted, automatically detects the first e16 fan. |
 | `title` | string | `inVENTer e16 – Geräte & Zonen` | Custom title displayed in the card header. |
+
+### Dynamic Zones (Zeitgesteuerte Zonenumschaltung)
+
+Dynamic Zones allow you to temporarily reassign individual devices (such as a specific fan) to a different ventilation zone during a configured time window, and automatically return them to their home zone when the window closes.
+
+**Practical Use Case:**
+In a bedroom with two reversible fans, you might want one fan to run in pure exhaust mode (*ventilation*) during the night (e.g. from 22:00 to 07:00) to pull fresh air into the room or cool it down, while during the day both fans run synchronized in *heat recovery* mode. By creating a temporary exhaust zone (e.g. *Zone 3 "Abluft"* or *Zone Tmp*) and setting a dynamic schedule on that fan, Home Assistant moves the fan to the exhaust zone at 22:00 and moves it back to its standard bedroom zone at 07:00.
+
+> [!IMPORTANT]
+> **Relies on Home Assistant Logic (Not Controller Firmware Logic):**
+> This scheduled switching is implemented entirely in Home Assistant via `custom_components/inventer_e16/dynamic_zones.py` and **does NOT rely on internal controller scheduler memory**.
+> The physical inVENTer Easy Connect e16 controller only supports static device-to-zone mappings via `DeviceRowField DF_ZONE` (packet 140) and has no internal timer for moving devices across zones.
+> 
+> Home Assistant runs a background scheduler (`DynamicZoneManager`) that:
+> - Persists dynamic zone schedules across Home Assistant restarts in internal storage.
+> - Tracks time minute-by-minute and evaluates intervals (including overnight spans across midnight and specific active weekdays).
+> - Dispatches the `set_device_zone` commands to the controller when entering and exiting the time window.
+> - Automatically restores the device to its normal zone if the schedule is deleted or disabled while active.
+> - Automatically keeps track if you manually reassign the device's standard zone during the day.
+
+#### Configuring Dynamic Zones in the UI
+In the **Lovelace Devices Card (`inventer-e16-devices-card`)**:
+1. Find your fan in the device list.
+2. Click the **⏱️ Dynamisch** button next to its zone assignment.
+3. In the dialog, select:
+   - **Aktivieren / Enable:** Toggle on.
+   - **Ziel-Zone / Target zone:** The temporary zone (e.g. Zone 2 or Zone 3).
+   - **Startzeit & Endzeit / Start & End time:** e.g. `22:00` to `07:00`.
+   - **Wochentage / Weekdays:** Active days (all days, Mon–Fri, Sat–Sun, or custom selection).
+4. Click **Speichern (Save)**. When active, the badge turns orange with a live indicator (e.g. `⚡ Aktiv in Zone 3 (22:00–07:00)`).
+
+#### Automation Services
+You can also set or clear dynamic zone schedules via Home Assistant automations:
+
+```yaml
+action: inventer_e16.set_dynamic_device_zone
+target:
+  entity_id: fan.inventer_zone_1
+data:
+  address: 2            # Bus address of the device (0–31)
+  target_zone: 3        # Zone to switch to during the window
+  start_time: "22:00"   # HH:MM
+  end_time: "07:00"     # HH:MM
+  enabled: true
+  weekdays: [0, 1, 2, 3, 4, 5, 6]
+```
+
+To remove a dynamic schedule:
+```yaml
+action: inventer_e16.delete_dynamic_device_zone
+target:
+  entity_id: fan.inventer_zone_1
+data:
+  address: 2
+```
 
 
 ## Requirements
