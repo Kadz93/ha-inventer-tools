@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.18 – 2026-11-02
+
+- **Dynamic Zones (zeitgesteuerte Zonenumschaltung)**:
+  - Temporarily reassign individual ventilation devices (e.g., bedroom fans) to a target zone during a configured time window (with support for overnight spans across midnight and weekday filters) and automatically return them when inactive.
+  - Background scheduler (`DynamicZoneManager`) with persistent storage across Home Assistant restarts.
+  - Automatic fallback and restoration to original home zone when a schedule is deleted or disabled while active.
+- **Dynamic Zone Services**: Added `inventer_e16.get_dynamic_zones`, `inventer_e16.set_dynamic_zone`, and `inventer_e16.delete_dynamic_zone`.
+- **Lovelace Devices Card UI**: Integrated schedule configuration dialog and controls directly into `inventer-e16-devices-card`.
+- **Documentation & Tests**: Added documentation in `README.md`, architectural design in `docs/dynamic_zones_plan.md`, and unit tests in `tests/test_dynamic_zones.py`.
+
 ## 0.3.16 – 2026-11-02
 
 - **Lovelace cards**: Integrated dashboard cards for ventilation time schedule (`inventer-e16-schedule-card`) and device management (`inventer-e16-devices-card`), automatically registered as dashboard resources.
