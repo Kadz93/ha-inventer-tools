@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.16 – 2026-11-02
+
+- **Lovelace cards**: integrated dashboard cards for ventilation time schedule and device management.
+- **Multi-zone discovery**: improved multi-zone discovery and single-zone compatibility.
+- **Custom repository integration**: support direct integration installation and updates via HACS custom repository.
+
 ## 0.3.15 – 2026-10-21
 
 - **Onboarding with the phone** (#18): device ID and PSK can be read with a free BLE app such as
