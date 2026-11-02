@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.16 – 2026-11-02
+
+- **Lovelace cards**: Integrated dashboard cards for ventilation time schedule (`inventer-e16-schedule-card`) and device management (`inventer-e16-devices-card`), automatically registered as dashboard resources.
+- **Card enhancements**: Added support for Twin+ model, automatic entity-attribute zone detection, and full German and English internationalization (i18n).
+- **Multi-zone discovery & support**: Multi-zone support (zones 1 to 4) with improved auto-discovery and backwards compatibility for single-zone setups.
+- **Extended modes & services**: Added pause modes (flap closed / open) and services for schedule synchronization and device management.
+- **Custom repository integration**: Support direct integration installation and updates via HACS custom repository.
+
 ## 0.3.15 – 2026-10-21
 
 - **Onboarding with the phone** (#18): device ID and PSK can be read with a free BLE app such as
