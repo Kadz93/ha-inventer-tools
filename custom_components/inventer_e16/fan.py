@@ -107,6 +107,28 @@ async def async_setup_entry(hass, entry, async_add_entities):
         "async_set_device_zone",
         supports_response=SupportsResponse.OPTIONAL,
     )
+    entity_platform.async_get_current_platform().async_register_entity_service(
+        "set_dynamic_device_zone",
+        {
+            vol.Required("address"): vol.All(vol.Coerce(int), vol.Range(min=0, max=client.MAX_DEVICES - 1)),
+            vol.Required("target_zone"): vol.All(vol.Coerce(int), vol.Range(min=1, max=client.MAX_ZONES)),
+            vol.Required("start_time"): cv.string,
+            vol.Required("end_time"): cv.string,
+            vol.Optional("enabled", default=True): cv.boolean,
+            vol.Optional("weekdays"): vol.All(cv.ensure_list, [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))]),
+            vol.Optional("original_zone"): vol.All(vol.Coerce(int), vol.Range(min=1, max=client.MAX_ZONES)),
+        },
+        "async_set_dynamic_device_zone",
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    entity_platform.async_get_current_platform().async_register_entity_service(
+        "delete_dynamic_device_zone",
+        {
+            vol.Required("address"): vol.All(vol.Coerce(int), vol.Range(min=0, max=client.MAX_DEVICES - 1)),
+        },
+        "async_delete_dynamic_device_zone",
+        supports_response=SupportsResponse.OPTIONAL,
+    )
 
 
 class E16Fan(E16Entity, FanEntity):
@@ -236,6 +258,7 @@ class E16Fan(E16Entity, FanEntity):
                 "humidity": d.get("humidity"),
                 "runtime": d.get("runtime"),
                 "battery": d.get("battery"),
+                "dynamic_zone": data.dynamic_zones.get_rule(d["address"]) if getattr(data, "dynamic_zones", None) else None,
             })
         zones = [
             {
@@ -246,11 +269,43 @@ class E16Fan(E16Entity, FanEntity):
             }
             for zone_id in data.zone.zone_ids
         ]
-        return {"devices": devices, "zones": zones}
+        dynamic_zones = data.dynamic_zones.get_all_rules() if getattr(data, "dynamic_zones", None) else {}
+        return {"devices": devices, "zones": zones, "dynamic_zones": dynamic_zones}
 
     async def async_set_device_zone(self, address: int, zone: int):
         data = self._entry.runtime_data
         await data.info.async_set_device_zone(address, zone)
         return {"success": True, "address": address, "zone": zone}
+
+    async def async_set_dynamic_device_zone(
+        self,
+        address: int,
+        target_zone: int,
+        start_time: str,
+        end_time: str,
+        enabled: bool = True,
+        weekdays: list[int] | None = None,
+        original_zone: int | None = None,
+    ):
+        data = self.coordinator.config_entry.runtime_data
+        if not getattr(data, "dynamic_zones", None):
+            raise HomeAssistantError("Dynamic zone manager not initialized")
+        rule = await data.dynamic_zones.async_set_rule(
+            address=address,
+            target_zone=target_zone,
+            start_time=start_time,
+            end_time=end_time,
+            enabled=enabled,
+            weekdays=weekdays,
+            original_zone=original_zone,
+        )
+        return {"success": True, "rule": rule}
+
+    async def async_delete_dynamic_device_zone(self, address: int):
+        data = self.coordinator.config_entry.runtime_data
+        if not getattr(data, "dynamic_zones", None):
+            raise HomeAssistantError("Dynamic zone manager not initialized")
+        await data.dynamic_zones.async_delete_rule(address)
+        return {"success": True, "address": address}
 
 

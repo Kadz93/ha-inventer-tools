@@ -76,6 +76,11 @@ async def async_setup_entry(hass, entry):
                     device.id, area_id=registry.async_get(data.main_device_id).area_id)
             data.zone_device_ids[zone_id] = device.id
     entry.runtime_data = data
+    from .dynamic_zones import DynamicZoneManager
+
+    data.dynamic_zones = DynamicZoneManager(hass, entry, data.info)
+    await data.dynamic_zones.async_load()
+    data.dynamic_zones.async_start()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     @callback
@@ -92,6 +97,9 @@ async def async_setup_entry(hass, entry):
 
 
 async def async_unload_entry(hass, entry):
+    data = entry.runtime_data
+    if data and getattr(data, "dynamic_zones", None):
+        data.dynamic_zones.async_stop()
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 

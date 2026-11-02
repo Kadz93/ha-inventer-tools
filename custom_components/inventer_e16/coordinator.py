@@ -37,6 +37,7 @@ class E16Data:
     main_device_id: str | None = None
     # Device registry id per zone; zone 1 is the main device
     zone_device_ids: dict = field(default_factory=dict)
+    dynamic_zones: object | None = None
 
 
 class E16ZoneCoordinator(DataUpdateCoordinator):

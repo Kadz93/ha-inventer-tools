@@ -117,6 +117,8 @@ values. Zone 1 always has the indoor values; zones 2–4 only with an indoor sen
 | `inventer_e16.delete_time_program_entry` | Deletes one entry |
 | `inventer_e16.get_devices` | Returns detected radio devices and zones from the controller |
 | `inventer_e16.set_device_zone` | Assigns a radio device (address 0–31) to a zone (1–4) |
+| `inventer_e16.set_dynamic_device_zone` | Temporarily reassigns a device to another zone during a time window |
+| `inventer_e16.delete_dynamic_device_zone` | Deletes a dynamic zone schedule and restores the device's original zone |
 
 A pause that ends by itself after 30 minutes:
 
