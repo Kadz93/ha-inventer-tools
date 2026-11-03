@@ -9,6 +9,8 @@ I test everything on my own setup before releasing it into my main, bugs will ap
 
 Please submit issues, if requested of course we can find a communication channel. (issues is super slow imho :( ))
 
+**This fork is a HACS custom repository and has to be added as stated in the readme below for smooth updates**
+
 **Additional features** in this fork:
 - **Multi-zone support:** Manage multi-zone setups, zone fans, statuses, and assign profiles per zone.
 - **Support for all fan modes:** Full control over `heat_recovery`, `ventilation`, and both pause flap modes (`pause` flap closed, `pause_open` flap open).
