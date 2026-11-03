@@ -9,7 +9,7 @@ I test everything on my own setup before releasing it into my main, bugs will ap
 
 Please submit issues, if requested of course we can find a communication channel. (issues is super slow imho :( ))
 
-Additional features in this fork:
+**Additional features** in this fork:
 - **Multi-zone support:** Manage multi-zone setups, zone fans, statuses, and assign profiles per zone.
 - **Support for all fan modes:** Full control over `heat_recovery`, `ventilation`, and both pause flap modes (`pause` flap closed, `pause_open` flap open).
 - **Lovelace Custom Card (`inventer-e16-schedule-card`):** View, add, edit, and delete time schedule points across all standard and custom ventilation profiles (1–15).
@@ -18,9 +18,6 @@ Additional features in this fork:
 - **Lovelace Custom Card (`inventer-e16-devices-card`):** View all detected wireless devices (fans, sensors, controller) with live telemetry, filter by type or zone, and reassign devices to zones with a single click via the `get_devices` and `set_device_zone` services.
 - **Dynamic Zones (zeitgesteuerte Zonenumschaltung):** Temporarily reassign single devices (e.g. a bedroom fan) to another zone (e.g. an exhaust or temporary zone) based on a configured time window (e.g. overnight 22:00–07:00), and switch them back automatically. *(Note: This feature relies entirely on Home Assistant's internal logic and scheduler, NOT on controller firmware logic, as the physical e16 controller only supports static device-to-zone allocations).*
 
-> [!WARNING]
-> ** Important Warning:**
-> Managing time schedules directly modifies the internal timetable memory of your inVENTer e16 controller. While the integration ensures that timetable data is always pulled from the controller first before anything is written and verifies every write back, **if you notice any issues, inconsistencies, or unexpected controller behavior with the timetables, immediately deactivate/disable this integration in Home Assistant** (*Settings → Devices & Services → inVENTer e16 → 3 dots → Disable*). Deactivating halts all communication so that the controller can run undisturbed and can be checked or restored via the official inVENTer app.
 
 # inVENTer Easy Connect e16 for Home Assistant
 
@@ -110,10 +107,11 @@ there is no undo.
 
 ### Lovelace Custom Card: Schedule Editor (Zeitplan-Editor)
 
-The integration includes a built-in Lovelace custom card (`inventer-e16-schedule-card`) that allows you to view, add, edit, and delete time schedule points for all ventilation profiles directly in your Home Assistant dashboard:
+<img width="502" height="523" alt="image" src="https://github.com/user-attachments/assets/3e903164-24de-4658-9506-d2fd80f97650" /><img width="477" height="526" alt="image" src="https://github.com/user-attachments/assets/65583810-a017-4fde-9a6c-488597f41748" />
 
-> [!WARNING]
-> **Warnhinweis (Wichtig):** Sollten Probleme oder Unregelmäßigkeiten mit den Zeitplänen (Time Tables) auf dem Regler auftreten, bitte die Integration vorübergehend in Home Assistant deaktivieren (*Einstellungen → Geräte & Dienste → inVENTer e16 → ⋮ → Deaktivieren*).
+
+
+The integration includes a built-in Lovelace custom card (`inventer-e16-schedule-card`) that allows you to view, add, edit, and delete time schedule points for all ventilation profiles directly in your Home Assistant dashboard:
 
 - **Profiles supported:** Standard profiles (*living_room / Wohnzimmer*, *bedroom / Schlafzimmer*, *childrens_room*, *bathroom*, *kitchen*, *holiday*) as well as all 9 custom profiles (*custom_1* to *custom_9* / *Benutzerdefiniertes Profil 1–9*).
 - **Automated slot allocation:** Free memory slots (Speicherplätze 0–31) are assigned automatically when creating new entries; manual slot selection is not required.
@@ -209,12 +207,17 @@ cards:
 
 ### Lovelace Custom Card: Device & Zone Management (Geräte- & Zonenverwaltung)
 
+<img width="502" height="542" alt="image" src="https://github.com/user-attachments/assets/ae448bb6-b5f9-48cd-9c14-91a9c4577ee8" /><img width="462" height="462" alt="image" src="https://github.com/user-attachments/assets/9017f56d-5f60-49bd-b648-5af8068184dc" />
+
+
+
 The integration also includes a Lovelace custom card (`inventer-e16-devices-card`) that displays all detected wireless devices (fans, temperature/humidity sensors, battery sensors, controller) and lets you assign them to any configured ventilation zone:
 
 - **All detected devices at a glance:** View device names, bus addresses, models (`iV14-Zero`, `iV-Twin+`, `Indoor sensor`, etc.), online status, radio signal levels (dBm), battery levels, runtimes, and live telemetry.
 - **Filter options:** Filter between All devices, Fans, Sensors, and Controller, or view devices belonging to a specific zone.
 - **1-Click zone assignment:** Assign any fan or sensor to another zone using the interactive zone buttons. The card optimistically updates the assignment in the UI and synchronizes the change directly with the e16 controller via the `set_device_zone` service.
 - **Auto-detection:** Automatically discovers configured zones and devices via native integration services (`get_devices` and `set_device_zone`).
+- **Dynamic Zones** Lets you set a time based zone change for every device (e.g. only blow out in bedroom at night)
 
 #### Card Setup
 
